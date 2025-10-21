@@ -39,8 +39,9 @@ const features = [
 
 export function FeaturesSection() {
   return (
-    <section className="container px-4 py-12 md:px-6 md:py-20">
-      <div className="mb-12 text-center">
+    <section className="w-full px-4 py-12 md:px-6 md:py-20">
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-12 text-center">
         <div className="mb-4 inline-block rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
           ⭐ Super Cool Features
         </div>
@@ -50,9 +51,9 @@ export function FeaturesSection() {
         <p className="mt-4 text-lg text-muted-foreground text-pretty">
           We've packed all the awesome tools to help you succeed! ❤️
         </p>
-      </div>
+        </div>
 
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {features.map((feature, index) => (
           <Card key={index} className="group border-2 border-primary shadow-lg">
             <CardContent className="p-6">
@@ -64,6 +65,7 @@ export function FeaturesSection() {
             </CardContent>
           </Card>
         ))}
+        </div>
       </div>
     </section>
   )

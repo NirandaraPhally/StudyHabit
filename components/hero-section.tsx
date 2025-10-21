@@ -7,10 +7,10 @@ import Link from "next/link"
 
 export function HeroSection() {
   return (
-    <section className="container px-4 py-12 md:px-6 md:py-20">
-      <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
+    <section className="w-full px-4 py-12 md:px-6 md:py-20">
+      <div className="mx-auto max-w-7xl grid gap-8 md:grid-cols-1 lg:grid-cols-2 lg:gap-12">
         {/* Left Column - Content */}
-        <div className="flex flex-col justify-start space-y-6 pt-4">
+          <div className="flex flex-col justify-start space-y-6 pt-4">
           <Badge variant="secondary" className="w-fit rounded-full bg-primary/10 text-primary hover:bg-primary/20">
             🚀 Transform Your Study Journey!
           </Badge>
@@ -38,7 +38,7 @@ export function HeroSection() {
             </Button>
           </div>
 
-          <div className="flex justify-start pl-32">
+          <div className="flex justify-start">
             <Link href="/login">
               <Button variant="ghost" size="lg" className="rounded-full border-2 border-primary text-primary hover:bg-primary hover:text-white transition-all duration-200 cursor-pointer">
                 Login🚀
@@ -74,8 +74,8 @@ export function HeroSection() {
         </div>
 
         {/* Right Column - Image Card */}
-        <div className="relative flex h-full w-full items-center justify-center lg:min-h-[600px]">
-          <Card className="relative h-full w-full max-w-[500px] overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-accent p-1 shadow-2xl">
+        <div className="relative flex h-full w-full items-center justify-center lg:min-h-[420px]">
+          <Card className="relative h-full w-full max-w-[500px] sm:max-w-[420px] md:max-w-[360px] overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-accent p-1 shadow-2xl">
             <div className="relative aspect-[3/4] w-full overflow-hidden rounded-3xl bg-gradient-to-br from-blue-400 to-blue-600">
               <Image 
                 src="/student.jpg" 

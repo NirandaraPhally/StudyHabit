@@ -15,6 +15,11 @@ export const metadata: Metadata = {
   description:
     "Track, improve, and achieve your study goals with StudyHabit. Join thousands of students crushing their goals!",
   generator: "v0.app",
+  icons: {
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
 }
 
 export default function RootLayout({
