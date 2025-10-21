@@ -21,7 +21,7 @@ export function HeroSection() {
 
             <p className="text-lg text-muted-foreground text-pretty md:text-xl">
               Hey there, gorgeous student! 👋 Ready to level up your study game? Join thousands of awesome learners who
-              are crushing their goals with StudyHabit! Let's make learning fun together! 🎓
+              are crushing their goals with StudyHabit! Let&apos;s make learning fun together! 🎓
             </p>
           </div>
 
@@ -37,7 +37,7 @@ export function HeroSection() {
             </Button>
           </div>
 
-          <div className="flex justify-start pl-38">
+          <div className="flex justify-start pl-32">
             <Button variant="ghost" size="lg" className="rounded-full border-2 border-primary text-primary hover:bg-primary hover:text-white transition-all duration-200 cursor-pointer">
               Login🚀
             </Button>
@@ -91,7 +91,7 @@ export function HeroSection() {
                   </div>
                   <div>
                     <p className="text-sm font-semibold">+75% This Week! 🎉</p>
-                    <p className="text-xs text-muted-foreground">You're on fire!</p>
+                    <p className="text-xs text-muted-foreground">You&apos;re on fire!</p>
                   </div>
                 </Card>
               </div>
