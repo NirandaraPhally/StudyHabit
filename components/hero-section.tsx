@@ -75,7 +75,7 @@ export function HeroSection() {
           <Card className="relative h-full w-full max-w-[500px] overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-accent p-1 shadow-2xl">
             <div className="relative aspect-[3/4] w-full overflow-hidden rounded-3xl bg-gradient-to-br from-blue-400 to-blue-600">
               <Image 
-                src="/aa75d62cd8b9b565a7cf316715ff826604b12566.jpg" 
+                src="/student.jpg" 
                 alt="Happy student" 
                 fill 
                 className="object-cover"
