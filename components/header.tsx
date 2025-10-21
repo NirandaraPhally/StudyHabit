@@ -9,11 +9,11 @@ export function Header() {
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
             <BookOpen className="h-5 w-5 text-primary-foreground" />
           </div>
-          <span className="text-xl font-bold">StudyHack</span>
+          <span className="text-xl font-bold">StudyHabit</span>
         </div>
 
-        <Button variant="outline" size="sm" className="rounded-full bg-transparent">
-          Login
+        <Button variant="outline" size="sm" className="rounded-full border-2 border-primary text-primary hover:bg-primary hover:text-white transition-all duration-200 cursor-pointer">
+          Login🚀
         </Button>
       </div>
     </header>

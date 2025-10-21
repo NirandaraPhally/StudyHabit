@@ -24,14 +24,14 @@ export function CTASection() {
             <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:justify-center">
               <Button
                 size="lg"
-                className="rounded-full bg-white text-primary shadow-lg hover:bg-white/90 hover:shadow-xl"
+                className="rounded-full bg-white text-primary shadow-lg hover:bg-white/90 hover:shadow-xl hover:scale-105 transition-all duration-200 cursor-pointer"
               >
                 Create Organization 🚀
               </Button>
               <Button
                 size="lg"
                 variant="outline"
-                className="rounded-full border-2 border-white bg-transparent text-white hover:bg-white/10"
+                className="rounded-full border-2 border-white bg-transparent text-white hover:bg-white/10 hover:scale-105 hover:border-white/80 transition-all duration-200 cursor-pointer"
               >
                 Have Invitation? 📧
               </Button>

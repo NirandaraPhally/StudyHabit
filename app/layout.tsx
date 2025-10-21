@@ -8,9 +8,9 @@ const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "StudyHack - Transform Your Study Journey",
+  title: "StudyHabit - Transform Your Study Journey",
   description:
-    "Track, improve, and achieve your study goals with StudyHack. Join thousands of students crushing their goals!",
+    "Track, improve, and achieve your study goals with StudyHabit. Join thousands of students crushing their goals!",
   generator: "v0.app",
 }
 
@@ -21,8 +21,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`font-sans antialiased`}>
-        {children}
+      <body className={`font-sans antialiased bg-gradient-to-br from-[#EFF8FF] via-[#D8EAFE] to-[#DFF2FE] min-h-screen`}>
+        <div className="bg-gradient-to-br from-[#EFF8FF] via-[#D8EAFE] to-[#DFF2FE] min-h-screen">
+          {children}
+        </div>
         <Analytics />
       </body>
     </html>

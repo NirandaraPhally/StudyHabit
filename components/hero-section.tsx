@@ -9,7 +9,7 @@ export function HeroSection() {
     <section className="container px-4 py-12 md:px-6 md:py-20">
       <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
         {/* Left Column - Content */}
-        <div className="flex flex-col justify-center space-y-6">
+        <div className="flex flex-col justify-start space-y-6 pt-4">
           <Badge variant="secondary" className="w-fit rounded-full bg-primary/10 text-primary hover:bg-primary/20">
             🚀 Transform Your Study Journey!
           </Badge>
@@ -21,28 +21,30 @@ export function HeroSection() {
 
             <p className="text-lg text-muted-foreground text-pretty md:text-xl">
               Hey there, gorgeous student! 👋 Ready to level up your study game? Join thousands of awesome learners who
-              are crushing their goals with StudyHack! Let's make learning fun together! 🎓
+              are crushing their goals with StudyHabit! Let's make learning fun together! 🎓
             </p>
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button
               size="lg"
-              className="rounded-full bg-gradient-to-r from-secondary to-primary text-white shadow-lg hover:shadow-xl"
+              className="rounded-full bg-gradient-to-r from-secondary to-primary text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 cursor-pointer"
             >
               Create Organization 🚀
             </Button>
-            <Button size="lg" variant="outline" className="rounded-full bg-transparent">
+            <Button size="lg" variant="outline" className="rounded-full border-2 border-primary bg-transparent text-primary hover:bg-primary hover:text-white hover:scale-105 transition-all duration-200 cursor-pointer">
               How it Works? 🤔
             </Button>
           </div>
 
-          <Button variant="ghost" size="sm" className="w-fit rounded-full border">
-            Login
-          </Button>
+          <div className="flex justify-start pl-38">
+            <Button variant="ghost" size="lg" className="rounded-full border-2 border-primary text-primary hover:bg-primary hover:text-white transition-all duration-200 cursor-pointer">
+              Login🚀
+            </Button>
+          </div>
 
           {/* Stats */}
-          <div className="flex flex-wrap gap-6 pt-4">
+          <div className="flex flex-wrap items-center gap-6 pt-4">
             <div className="flex items-center gap-2">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
                 <Users className="h-5 w-5 text-primary" />
@@ -52,6 +54,9 @@ export function HeroSection() {
                 <p className="text-xs text-muted-foreground">Happy Students</p>
               </div>
             </div>
+
+            {/* Vertical Separator */}
+            <div className="h-8 w-px bg-primary"></div>
 
             <div className="flex items-center gap-2">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
@@ -66,13 +71,20 @@ export function HeroSection() {
         </div>
 
         {/* Right Column - Image Card */}
-        <div className="relative flex items-center justify-center">
-          <Card className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-accent p-1 shadow-2xl">
+        <div className="relative flex h-full w-full items-center justify-center lg:min-h-[600px]">
+          <Card className="relative h-full w-full max-w-[500px] overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-accent p-1 shadow-2xl">
             <div className="relative aspect-[3/4] w-full overflow-hidden rounded-3xl bg-gradient-to-br from-blue-400 to-blue-600">
-              <Image src="/happy-smiling-student-with-thumbs-up-professional-.jpg" alt="Happy student" fill className="object-cover" priority />
+              <Image 
+                src="/aa75d62cd8b9b565a7cf316715ff826604b12566.jpg" 
+                alt="Happy student" 
+                fill 
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                priority 
+              />
 
               {/* Floating Badge */}
-              <div className="absolute bottom-6 left-6 right-6">
+              <div className="absolute bottom-6 left-4 z-10">
                 <Card className="flex items-center gap-3 bg-white/95 p-4 backdrop-blur">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary">
                     <span className="text-lg">📊</span>
