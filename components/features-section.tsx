@@ -18,7 +18,7 @@ const features = [
     icon: Trophy,
     title: "Epic Leaderboards 🏆",
     description:
-      "Compare with your squad! Friendly competition makes learning FUN! 🎮 See who&apos;s the study champion today!",
+      "Compare with your squad! Friendly competition makes learning FUN! 🎮 See who's the study champion today!",
   },
   {
     icon: Crosshair,
@@ -48,7 +48,7 @@ export function FeaturesSection() {
           Everything You Need to Slay!
         </h2>
         <p className="mt-4 text-lg text-muted-foreground text-pretty">
-          We&apos;ve packed all the awesome tools to help you succeed! ❤️
+          We've packed all the awesome tools to help you succeed! ❤️
         </p>
       </div>
 
