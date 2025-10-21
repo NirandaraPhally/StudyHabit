@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { BookOpen } from "lucide-react"
+import Link from "next/link"
 
 export function Header() {
   return (
@@ -12,9 +13,11 @@ export function Header() {
           <span className="text-xl font-bold">StudyHabit</span>
         </div>
 
-        <Button variant="outline" size="sm" className="rounded-full border-2 border-primary text-primary hover:bg-primary hover:text-white transition-all duration-200 cursor-pointer">
-          Login🚀
-        </Button>
+        <Link href="/login">
+          <Button variant="outline" size="sm" className="rounded-full border-2 border-primary text-primary hover:bg-primary hover:text-white transition-all duration-200 cursor-pointer">
+            Login🚀
+          </Button>
+        </Link>
       </div>
     </header>
   )

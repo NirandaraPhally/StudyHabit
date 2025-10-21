@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
 import { Users, Clock } from "lucide-react"
 import Image from "next/image"
+import Link from "next/link"
 
 export function HeroSection() {
   return (
@@ -38,9 +39,11 @@ export function HeroSection() {
           </div>
 
           <div className="flex justify-start pl-32">
-            <Button variant="ghost" size="lg" className="rounded-full border-2 border-primary text-primary hover:bg-primary hover:text-white transition-all duration-200 cursor-pointer">
-              Login🚀
-            </Button>
+            <Link href="/login">
+              <Button variant="ghost" size="lg" className="rounded-full border-2 border-primary text-primary hover:bg-primary hover:text-white transition-all duration-200 cursor-pointer">
+                Login🚀
+              </Button>
+            </Link>
           </div>
 
           {/* Stats */}
