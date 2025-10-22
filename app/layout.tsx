@@ -2,6 +2,7 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
+import { SetupProvider } from "../lib/setup-context"
 import "./globals.css"
 
 const inter = Inter({ 
@@ -30,9 +31,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} font-sans antialiased bg-gradient-to-br from-[#EFF8FF] via-[#D8EAFE] to-[#DFF2FE] min-h-screen`}>
-        <div className="bg-gradient-to-br from-[#EFF8FF] via-[#D8EAFE] to-[#DFF2FE] min-h-screen">
-          {children}
-        </div>
+        <SetupProvider>
+          <div className="bg-gradient-to-br from-[#EFF8FF] via-[#D8EAFE] to-[#DFF2FE] min-h-screen">
+            {children}
+          </div>
+        </SetupProvider>
         <Analytics />
       </body>
     </html>

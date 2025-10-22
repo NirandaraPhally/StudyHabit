@@ -1,11 +1,35 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Card } from "../../components/ui/card"
 import { Button } from "../../components/ui/button"
 import { Input } from "../../components/ui/input"
+import { useSetup } from "../../lib/setup-context"
 
 export default function OrganizationDetails() {
+  const { data, updateOrganization } = useSetup()
+  const router = useRouter()
+  const [formData, setFormData] = useState({
+    organizationType: data.organization.organizationType,
+    organizationName: data.organization.organizationName,
+    expectedStudents: data.organization.expectedStudents
+  })
+
+  const handleInputChange = (field: string, value: string) => {
+    const newFormData = { ...formData, [field]: value }
+    setFormData(newFormData)
+    // Save to context immediately for real-time updates
+    updateOrganization(newFormData)
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    updateOrganization(formData)
+    // Navigate to admin page
+    router.push("/admin")
+  }
   return (
     <div className="min-h-screen bg-gradient-to-br from-white to-purple-50/30">
       <div className="container mx-auto px-4 pt-6">
@@ -67,20 +91,41 @@ export default function OrganizationDetails() {
               <p className="text-sm text-gray-500">Tell us about your school or institution</p>
             </div>
 
-            <form className="space-y-4" autoComplete="off" noValidate>
+            <form className="space-y-4" autoComplete="off" noValidate onSubmit={handleSubmit}>
               <div>
                 <label className="text-sm text-gray-600">Organization Type *</label>
-                <Input type="text" placeholder="e.g., Lincoln High School" className="h-11 rounded-lg border border-gray-200 px-4" />
+                <Input 
+                  type="text" 
+                  placeholder="e.g., University, High School, College" 
+                  className="h-11 rounded-lg border border-gray-200 px-4"
+                  value={formData.organizationType}
+                  onChange={(e) => handleInputChange('organizationType', e.target.value)}
+                  required
+                />
               </div>
 
               <div>
                 <label className="text-sm text-gray-600">Organization Name *</label>
-                <Input type="text" placeholder="e.g., Lincoln High School" className="h-11 rounded-lg border border-gray-200 px-4" />
+                <Input 
+                  type="text" 
+                  placeholder="e.g., Lincoln High School" 
+                  className="h-11 rounded-lg border border-gray-200 px-4"
+                  value={formData.organizationName}
+                  onChange={(e) => handleInputChange('organizationName', e.target.value)}
+                  required
+                />
               </div>
 
               <div>
                 <label className="text-sm text-gray-600">Expected Number of Students *</label>
-                <Input type="text" placeholder="e.g., 100-500" className="h-11 rounded-lg border border-gray-200 px-4" />
+                <Input 
+                  type="text" 
+                  placeholder="e.g., 100-500" 
+                  className="h-11 rounded-lg border border-gray-200 px-4"
+                  value={formData.expectedStudents}
+                  onChange={(e) => handleInputChange('expectedStudents', e.target.value)}
+                  required
+                />
               </div>
 
               <div className="rounded-lg bg-purple-50/50 p-4">
@@ -98,9 +143,12 @@ export default function OrganizationDetails() {
               </div>
 
               <div className="pt-6">
-                <Link href="/admin">
-                  <Button className="w-full rounded-full bg-purple-600 text-white px-6 py-3">Continue to Admin Setup →</Button>
-                </Link>
+                <Button 
+                  type="submit"
+                  className="w-full rounded-full bg-purple-600 text-white px-6 py-3"
+                >
+                  Continue to Admin Setup →
+                </Button>
               </div>
             </form>
           </div>

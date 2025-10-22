@@ -4,11 +4,37 @@ import { useState } from "react"
 import { Button } from "../../components/ui/button"
 import { Card } from "../../components/ui/card"
 import { Input } from "../../components/ui/input"
+import { useSetup } from "../../lib/setup-context"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 export default function CreateOrganization() {
-  const [step, setStep] = useState(1)
-  const totalSteps = 3
+  const { data, updateAdmin } = useSetup()
+  const router = useRouter()
+  const [formData, setFormData] = useState({
+    fullName: data.admin.fullName,
+    email: data.admin.email,
+    password: data.admin.password,
+    confirmPassword: data.admin.confirmPassword
+  })
+
+  const handleInputChange = (field: string, value: string) => {
+    const newFormData = { ...formData, [field]: value }
+    setFormData(newFormData)
+    // Save to context immediately for real-time updates
+    updateAdmin(newFormData)
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (formData.password !== formData.confirmPassword) {
+      alert("Passwords do not match!")
+      return
+    }
+    updateAdmin(formData)
+    // Navigate to payment page
+    router.push("/payment")
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white to-purple-50/30">
@@ -170,7 +196,7 @@ export default function CreateOrganization() {
               </p>
             </div>
 
-            <form className="space-y-4" autoComplete="off" noValidate>
+            <form className="space-y-4" autoComplete="off" noValidate onSubmit={handleSubmit}>
               {/* Prevent some browsers from autofilling by placing a hidden dummy input */}
               <input type="text" name="__no_autofill" autoComplete="off" className="hidden" />
               <div className="rounded-xl bg-blue-50/50 p-4">
@@ -180,9 +206,11 @@ export default function CreateOrganization() {
                     <path d="M7 7H17" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                   </svg>
                   <div>
-                    <p className="text-sm text-gray-600">Organization:ffglfglsglsglflglg</p>
+                    <p className="text-sm text-gray-600">
+                      Organization: {data.organization.organizationName || "Not specified"}
+                    </p>
                     <p className="mt-1 text-xs text-gray-500">
-                      Type: university • Size: 101-500 students
+                      Type: {data.organization.organizationType || "Not specified"} • Size: {data.organization.expectedStudents || "Not specified"} students
                     </p>
                   </div>
                 </div>
@@ -194,6 +222,9 @@ export default function CreateOrganization() {
                   type="text"
                   placeholder="e.g., Dr. Sarah Johnson"
                   className="h-11 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                  value={formData.fullName}
+                  onChange={(e) => handleInputChange('fullName', e.target.value)}
+                  required
                 />
               </div>
 
@@ -205,6 +236,9 @@ export default function CreateOrganization() {
                   placeholder="admin@yourschool.edu"
                   autoComplete="off"
                   className="h-11 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  required
                 />
               </div>
 
@@ -216,6 +250,9 @@ export default function CreateOrganization() {
                   autoComplete="new-password"
                   placeholder="At least 8 characters"
                   className="h-11 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                  value={formData.password}
+                  onChange={(e) => handleInputChange('password', e.target.value)}
+                  required
                 />
               </div>
 
@@ -227,6 +264,9 @@ export default function CreateOrganization() {
                   autoComplete="new-password"
                   placeholder="Re-enter your password"
                   className="h-11 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                  value={formData.confirmPassword}
+                  onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                  required
                 />
               </div>
 
@@ -239,13 +279,12 @@ export default function CreateOrganization() {
                     ← Back
                   </Button>
                 </Link>
-                <Link href="/payment">
-                  <Button
-                    className="rounded-full bg-purple-600 px-8 py-2.5 text-sm font-medium text-white hover:bg-purple-700"
-                  >
-                    Continue to Payment →
-                  </Button>
-                </Link>
+                <Button
+                  type="submit"
+                  className="rounded-full bg-purple-600 px-8 py-2.5 text-sm font-medium text-white hover:bg-purple-700"
+                >
+                  Continue to Payment →
+                </Button>
               </div>
             </form>
           </div>

@@ -8,3 +8,12 @@ declare module '*.ico'
 interface ImportMeta {
   readonly env: Record<string, string | boolean | undefined>
 }
+
+// Basic JSX support
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      [elemName: string]: any
+    }
+  }
+}

@@ -3,8 +3,11 @@
 import Link from "next/link"
 import { Card } from "../../components/ui/card"
 import { Button } from "../../components/ui/button"
+import { useSetup } from "../../lib/setup-context"
 
 export default function PaymentPage() {
+  const { data } = useSetup()
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-white to-purple-50/30">
       <div className="container mx-auto px-4 pt-6">
@@ -54,8 +57,15 @@ export default function PaymentPage() {
           <div className="p-8">
             <div className="mb-6">
               <div className="rounded-lg bg-green-50/50 p-4">
-                <p className="text-sm font-medium">Admin: ffglfglsglsglflglg</p>
-                <p className="text-xs text-gray-500 mt-1">Organization: ffglfglsglsglflglg</p>
+                <p className="text-sm font-medium">
+                  Admin: {data.admin.fullName || "Not specified"}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Organization: {data.organization.organizationName || "Not specified"}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Type: {data.organization.organizationType || "Not specified"} • Size: {data.organization.expectedStudents || "Not specified"} students
+                </p>
               </div>
             </div>
 
