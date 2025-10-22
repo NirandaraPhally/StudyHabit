@@ -23,12 +23,14 @@ export function CTASection() {
               </h2>
 
               <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:justify-center">
-                <Button
-                  size="lg"
-                  className="rounded-full bg-white text-primary shadow-lg hover:bg-white/90 hover:shadow-xl hover:scale-105 transition-all duration-200 cursor-pointer"
-                >
-                  Create Organization 🚀
-                </Button>
+                <a href="/organization">
+                  <Button
+                    size="lg"
+                    className="rounded-full bg-white text-primary shadow-lg hover:bg-white/90 hover:shadow-xl hover:scale-105 transition-all duration-200 cursor-pointer"
+                  >
+                    Create Organization 🚀
+                  </Button>
+                </a>
                 <Button
                   size="lg"
                   variant="outline"

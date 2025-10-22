@@ -27,7 +27,7 @@ export function HeroSection() {
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Link href="/admin">
+            <Link href="/organization">
               <Button
                 size="lg"
                 className="rounded-full bg-gradient-to-r from-secondary to-primary text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 cursor-pointer"

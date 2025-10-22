@@ -231,17 +231,21 @@ export default function CreateOrganization() {
               </div>
 
               <div className="flex items-center justify-between pt-6">
-                <Button 
-                  variant="outline" 
-                  className="rounded-full border border-gray-300 px-6 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
-                  ← Back
-                </Button>
-                <Button 
-                  className="rounded-full bg-purple-600 px-8 py-2.5 text-sm font-medium text-white hover:bg-purple-700"
-                >
-                  Continue to Payment →
-                </Button>
+                <Link href="/organization">
+                  <Button
+                    variant="outline"
+                    className="rounded-full border border-gray-300 px-6 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    ← Back
+                  </Button>
+                </Link>
+                <Link href="/payment">
+                  <Button
+                    className="rounded-full bg-purple-600 px-8 py-2.5 text-sm font-medium text-white hover:bg-purple-700"
+                  >
+                    Continue to Payment →
+                  </Button>
+                </Link>
               </div>
             </form>
           </div>
