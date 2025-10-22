@@ -1,3 +1,5 @@
+"use client"
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, Building, Lock, Cloud, GraduationCap, User, Mail, Shield } from "lucide-react"
@@ -5,28 +7,19 @@ import Link from "next/link"
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#EFF8FF] via-[#D8EAFE] to-[#DFF2FE] flex items-center justify-center p-4">
-      {/* Background decorative elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-20 text-4xl opacity-10">✨</div>
-        <div className="absolute top-40 right-32 text-3xl opacity-10">⭐</div>
-        <div className="absolute bottom-32 left-40 text-4xl opacity-10">🌟</div>
-        <div className="absolute bottom-20 right-20 text-3xl opacity-10">✨</div>
-        <div className="absolute top-60 left-1/2 text-2xl opacity-10">⭐</div>
+    <div className="min-h-screen bg-gradient-to-br from-[#EFF8FF] via-[#D8EAFE] to-[#DFF2FE]">
+      {/* Back button - Absolute positioning like other pages */}
+      <div className="absolute top-6 left-4 z-10">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-2 text-sm font-medium text-blue-600 shadow-sm hover:bg-blue-50 transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span>Back Home</span>
+        </Link>
       </div>
 
-      <div className="w-full max-w-md relative z-10">
-        {/* Back Home Link */}
-        <div className="mb-6">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-2 text-sm font-medium text-blue-600 shadow-sm hover:bg-blue-50 transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span>Back Home</span>
-          </Link>
-        </div>
-
+      <div className="container mx-auto max-w-md px-4 py-8">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
@@ -40,7 +33,7 @@ export default function LoginPage() {
         </div>
 
         {/* Main Login Card */}
-        <Card className="shadow-xl">
+        <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
           <CardContent className="p-6">
             {/* Welcome Section */}
             <div className="text-center mb-6">

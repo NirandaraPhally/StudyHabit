@@ -31,13 +31,15 @@ export function CTASection() {
                     Create Organization 🚀
                   </Button>
                 </a>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="rounded-full border-2 border-white bg-transparent text-white hover:bg-white/10 hover:scale-105 hover:border-white/80 transition-all duration-200 cursor-pointer"
-                >
-                  Have Invitation? 📧
-                </Button>
+                <a href="/invitation">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="rounded-full border-2 border-white bg-transparent text-white hover:bg-white/10 hover:scale-105 hover:border-white/80 transition-all duration-200 cursor-pointer"
+                  >
+                    Have Invitation? 📧
+                  </Button>
+                </a>
               </div>
 
               <p className="text-sm text-white/80">Students get FREE with an accepted code! 🎉</p>
