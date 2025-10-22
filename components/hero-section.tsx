@@ -27,12 +27,14 @@ export function HeroSection() {
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Button
-              size="lg"
-              className="rounded-full bg-gradient-to-r from-secondary to-primary text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 cursor-pointer"
-            >
-              Create Organization 🚀
-            </Button>
+            <Link href="/admin">
+              <Button
+                size="lg"
+                className="rounded-full bg-gradient-to-r from-secondary to-primary text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 cursor-pointer"
+              >
+                Create Organization 🚀
+              </Button>
+            </Link>
             <Button size="lg" variant="outline" className="rounded-full border-2 border-primary bg-transparent text-primary hover:bg-primary hover:text-white hover:scale-105 transition-all duration-200 cursor-pointer">
               How it Works? 🤔
             </Button>

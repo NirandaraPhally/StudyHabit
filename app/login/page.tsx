@@ -18,9 +18,12 @@ export default function LoginPage() {
       <div className="w-full max-w-md relative z-10">
         {/* Back Home Link */}
         <div className="mb-6">
-          <Link href="/" className="inline-flex items-center text-primary hover:text-primary/80 transition-colors">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back Home
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-2 text-sm font-medium text-blue-600 shadow-sm hover:bg-blue-50 transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back Home</span>
           </Link>
         </div>
 
