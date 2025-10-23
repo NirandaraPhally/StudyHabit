@@ -231,7 +231,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Tables Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="space-y-8">
           {/* Student Invitations */}
           <Card className="bg-white">
             <CardHeader>
@@ -255,15 +255,15 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full min-w-[800px]">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left py-3 px-2 text-sm font-medium text-gray-700">Name</th>
-                      <th className="text-left py-3 px-2 text-sm font-medium text-gray-700">Email</th>
-                      <th className="text-left py-3 px-2 text-sm font-medium text-gray-700">Invitation Code</th>
-                      <th className="text-left py-3 px-2 text-sm font-medium text-gray-700">Status</th>
-                      <th className="text-left py-3 px-2 text-sm font-medium text-gray-700">Created</th>
-                      <th className="text-left py-3 px-2 text-sm font-medium text-gray-700">Actions</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 w-32">Name</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 w-48">Email</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 w-36">Invitation Code</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 w-24">Status</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 w-28">Created</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 w-20">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -273,9 +273,9 @@ export default function AdminDashboard() {
                       { name: "Mike Johnson", email: "mike@example.com", code: "MATH456", status: "Pending", created: "2025-10-13" }
                     ].map((invitation, index) => (
                       <tr key={index} className="border-b hover:bg-gray-50">
-                        <td className="py-3 px-2 text-sm text-gray-900">{invitation.name}</td>
-                        <td className="py-3 px-2 text-sm text-gray-600">{invitation.email}</td>
-                        <td className="py-3 px-2 text-sm">
+                        <td className="py-3 px-4 text-sm text-gray-900">{invitation.name}</td>
+                        <td className="py-3 px-4 text-sm text-gray-600">{invitation.email}</td>
+                        <td className="py-3 px-4 text-sm">
                           <div className="flex items-center space-x-2">
                             <span className="text-gray-900">{invitation.code}</span>
                             <button className="text-gray-400 hover:text-gray-600">
@@ -283,7 +283,7 @@ export default function AdminDashboard() {
                             </button>
                           </div>
                         </td>
-                        <td className="py-3 px-2 text-sm">
+                        <td className="py-3 px-4 text-sm">
                           <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                             invitation.status === 'Accepted' 
                               ? 'bg-green-100 text-green-800' 
@@ -306,8 +306,8 @@ export default function AdminDashboard() {
                             )}
                           </span>
                         </td>
-                        <td className="py-3 px-2 text-sm text-gray-600">{invitation.created}</td>
-                        <td className="py-3 px-2 text-sm">
+                        <td className="py-3 px-4 text-sm text-gray-600">{invitation.created}</td>
+                        <td className="py-3 px-4 text-sm">
                           <button className="text-gray-400 hover:text-gray-600">
                             <MoreVertical className="w-4 h-4" />
                           </button>
@@ -352,15 +352,15 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full min-w-[800px]">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left py-3 px-2 text-sm font-medium text-gray-700">Name</th>
-                      <th className="text-left py-3 px-2 text-sm font-medium text-gray-700">Email</th>
-                      <th className="text-left py-3 px-2 text-sm font-medium text-gray-700">Study Hours</th>
-                      <th className="text-left py-3 px-2 text-sm font-medium text-gray-700">Streak</th>
-                      <th className="text-left py-3 px-2 text-sm font-medium text-gray-700">Status</th>
-                      <th className="text-left py-3 px-2 text-sm font-medium text-gray-700">Actions</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 w-32">Name</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 w-48">Email</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 w-28">Study Hours</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 w-24">Streak</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 w-24">Status</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 w-32">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -370,10 +370,10 @@ export default function AdminDashboard() {
                       { name: "James Wilson", email: "james@example.com", hours: "38.7 hrs", streak: "8 days", status: "Inactive" }
                     ].map((user, index) => (
                       <tr key={index} className="border-b hover:bg-gray-50">
-                        <td className="py-3 px-2 text-sm text-gray-900">{user.name}</td>
-                        <td className="py-3 px-2 text-sm text-gray-600">{user.email}</td>
-                        <td className="py-3 px-2 text-sm text-gray-900">{user.hours}</td>
-                        <td className="py-3 px-2 text-sm">
+                        <td className="py-3 px-4 text-sm text-gray-900">{user.name}</td>
+                        <td className="py-3 px-4 text-sm text-gray-600">{user.email}</td>
+                        <td className="py-3 px-4 text-sm text-gray-900">{user.hours}</td>
+                        <td className="py-3 px-4 text-sm">
                           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
                             <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
@@ -381,7 +381,7 @@ export default function AdminDashboard() {
                             {user.streak}
                           </span>
                         </td>
-                        <td className="py-3 px-2 text-sm">
+                        <td className="py-3 px-4 text-sm">
                           <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                             user.status === 'Active' 
                               ? 'bg-blue-100 text-blue-800' 
@@ -404,7 +404,7 @@ export default function AdminDashboard() {
                             )}
                           </span>
                         </td>
-                        <td className="py-3 px-2 text-sm">
+                        <td className="py-3 px-4 text-sm">
                           <button className="text-blue-600 hover:text-blue-800 font-medium">
                             View Details
                           </button>
