@@ -1,8 +1,14 @@
+"use client"
+
+import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { BookOpen } from "lucide-react"
+import { AddSessionModal } from "@/components/add-session-modal"
 
 export default function Dashboard() {
+  const [isAddSessionModalOpen, setIsAddSessionModalOpen] = useState(false)
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#EFF8FF] via-[#D8EAFE] to-[#DFF2FE]">
       {/* Header */}
@@ -254,7 +260,10 @@ export default function Dashboard() {
                 <p className="text-sm text-gray-600 mb-4">
                   Log what you just learned! Every session counts! 🏆
                 </p>
-                <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                <Button 
+                  onClick={() => setIsAddSessionModalOpen(true)}
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                >
                   Let's Log It! 🚀
                 </Button>
               </CardContent>
@@ -314,6 +323,12 @@ export default function Dashboard() {
           </div>
         </div>
       </main>
+
+      {/* Add Session Modal */}
+      <AddSessionModal 
+        open={isAddSessionModalOpen} 
+        onOpenChange={setIsAddSessionModalOpen} 
+      />
     </div>
   )
 }
