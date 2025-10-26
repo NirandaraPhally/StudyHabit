@@ -1,4 +1,4 @@
-/*! tailwindcss v4.1.3 | MIT License | https://tailwindcss.com */
+
 @layer properties {
   @supports (((-webkit-hyphens: none)) and (not (margin-trim: inline))) or ((-moz-orient: inline) and (not (color: rgb(from red r g b)))) {
     *, :before, :after, ::backdrop {
@@ -281,7 +281,6 @@
   }
 
   img, svg, video, canvas, audio, iframe, embed, object {
-    vertical-align: middle;
     display: block;
   }
 
@@ -834,6 +833,20 @@
   }
 
   .line-clamp-1 {
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+    -webkit-box-orient: vertical;
+    display: -webkit-box;
+    overflow: hidden;
+  }
+
+  /* Ensure standard 'line-clamp' is present for variants that target slots/select-values
+     This helps editor linters and provides the newer standard property alongside the
+     WebKit-prefixed version. It's safe to keep in source since build output is generated
+     from this file. */
+  :is(*:data-[slot=select-value]:line-clamp-1 > *)[data-slot="select-value"],
+  .line-clamp-1 {
+    line-clamp: 1;
     -webkit-line-clamp: 1;
     -webkit-box-orient: vertical;
     display: -webkit-box;
@@ -3067,11 +3080,12 @@
   }
 
   :is(.\*\:data-\[slot\=select-value\]\:line-clamp-1 > *)[data-slot="select-value"] {
-    -webkit-line-clamp: 1;
-    -webkit-box-orient: vertical;
-    display: -webkit-box;
-    overflow: hidden;
-  }
+      line-clamp: 1;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+      display: -webkit-box;
+      overflow: hidden;
+    }
 
   :is(.\*\:data-\[slot\=select-value\]\:flex > *)[data-slot="select-value"] {
     display: flex;
