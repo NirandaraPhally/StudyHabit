@@ -35,13 +35,25 @@ export function AdminRegistrationPage({ onNavigate, onAdminCreated }: AdminRegis
     e.preventDefault();
     
     if (!orgName || !orgType || !orgSize) {
-      toast.error('Please fill in all organization details! 📝');
+      toast.error('Please fill in all organization details! 📝', {
+        description: (
+          <span className="text-[#6B21A8]">
+            All fields are required
+          </span>
+        ),
+        style: { borderColor: '#C4B5FD', color: '#6B21A8' },
+      });
       return;
     }
     
     setStep('admin');
     toast.success('✅ Organization Info Saved!', {
-      description: 'Now set up your admin account',
+      description: (
+        <span className="text-[#6B21A8]">
+          Now set up your admin account
+        </span>
+      ),
+      style: { borderColor: '#C4B5FD', color: '#6B21A8' },
     });
   };
 
@@ -49,30 +61,61 @@ export function AdminRegistrationPage({ onNavigate, onAdminCreated }: AdminRegis
     e.preventDefault();
     
     if (!adminName || !adminEmail || !adminPassword || !confirmPassword) {
-      toast.error('Please fill in all admin details! 📝');
+      toast.error('Please fill in all admin details! 📝', {
+        description: (
+          <span className="text-[#6B21A8]">
+            All fields are required
+          </span>
+        ),
+        style: { borderColor: '#C4B5FD', color: '#6B21A8' },
+      });
       return;
     }
     
     if (adminPassword.length < 8) {
-      toast.error('Password must be at least 8 characters! 🔒');
+      toast.error('Password must be at least 8 characters! 🔒', {
+        description: (
+          <span className="text-[#6B21A8]">
+            Use a strong password for security
+          </span>
+        ),
+        style: { borderColor: '#C4B5FD', color: '#6B21A8' },
+      });
       return;
     }
     
     if (adminPassword !== confirmPassword) {
-      toast.error('Passwords do not match! 🔄');
+      toast.error('Passwords do not match! 🔄', {
+        description: (
+          <span className="text-[#6B21A8]">
+            Please make sure both passwords are the same
+          </span>
+        ),
+        style: { borderColor: '#C4B5FD', color: '#6B21A8' },
+      });
       return;
     }
     
     setStep('payment');
     toast.success('✅ Admin Account Ready!', {
-      description: 'Choose your subscription plan',
+      description: (
+        <span className="text-[#6B21A8]">
+          Choose your subscription plan
+        </span>
+      ),
+      style: { borderColor: '#C4B5FD', color: '#6B21A8' },
     });
   };
 
   const handlePaymentSubmit = (plan: 'monthly' | 'yearly') => {
     toast.success('🎉 Organization Created!', {
-      description: `${orgName} is ready! You can now invite students.`,
+      description: (
+        <span className="text-[#6B21A8]">
+          {orgName} is ready! You can now invite students.
+        </span>
+      ),
       duration: 4000,
+      style: { borderColor: '#C4B5FD', color: '#6B21A8' },
     });
     
     setTimeout(() => {

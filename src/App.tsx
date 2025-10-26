@@ -49,9 +49,14 @@ export default function App() {
         ? "👋 Admin Logged Out"
         : "👋 Logged Out Successfully",
       {
-        description:
-          "Thanks for using StudyHabit! See you soon! 💙",
-        duration: 3000,
+        description: (
+          <span className="text-[#6B21A8]">
+            {wasAdmin 
+              ? "Come back soon! 💼" 
+              : "Take a break and come back refreshed! 😊"}
+          </span>
+        ),
+        style: { borderColor: '#C4B5FD', color: '#6B21A8' },
       },
     );
   };

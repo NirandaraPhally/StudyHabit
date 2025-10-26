@@ -24,7 +24,13 @@ export function LoginPage({ onLogin, onNavigate }: LoginPageProps) {
     // Validate inputs
     if (!email || !password) {
       toast.error('Please fill in all fields! 📝', {
+        description: (
+          <span className="text-[#6B21A8]">
+            Both email and password are required
+          </span>
+        ),
         duration: 3000,
+        style: { borderColor: '#C4B5FD', color: '#6B21A8' },
       });
       return;
     }
@@ -32,13 +38,23 @@ export function LoginPage({ onLogin, onNavigate }: LoginPageProps) {
     // Show success toast with role indication
     if (isAdmin) {
       toast.success('🔐 Admin Login Successful!', {
-        description: 'Welcome back! You have full control over user management and analytics. 👨‍💼',
+        description: (
+          <span className="text-[#6B21A8]">
+            Welcome back! You have full control over user management and analytics. 👨‍💼
+          </span>
+        ),
         duration: 4000,
+        style: { borderColor: '#C4B5FD', color: '#6B21A8' },
       });
     } else {
       toast.success('💙 Login Successful!', {
-        description: 'Welcome back! Ready to track your study sessions and climb the leaderboard? 💪',
+        description: (
+          <span className="text-[#6B21A8]">
+            Welcome back! Ready to track your study sessions and climb the leaderboard? 💪
+          </span>
+        ),
         duration: 4000,
+        style: { borderColor: '#C4B5FD', color: '#6B21A8' },
       });
     }
     

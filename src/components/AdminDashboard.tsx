@@ -90,8 +90,13 @@ export function AdminDashboard({ onNavigate, onLogout }: AdminDashboardProps) {
     
     // Show success notification
     toast.success('📧 Invitation Sent!', {
-      description: `Invitation code ${code} sent to ${inviteEmail}`,
+      description: (
+        <span className="text-[#6B21A8]">
+          Invitation code {code} sent to {inviteEmail}
+        </span>
+      ),
       duration: 5000,
+      style: { borderColor: '#C4B5FD', color: '#6B21A8' },
     });
   };
 
@@ -99,14 +104,24 @@ export function AdminDashboard({ onNavigate, onLogout }: AdminDashboardProps) {
     try {
       await navigator.clipboard.writeText(code);
       toast.success('📋 Code Copied!', {
-        description: `Invitation code "${code}" copied to clipboard`,
+        description: (
+          <span className="text-[#6B21A8]">
+            Invitation code "{code}" copied to clipboard
+          </span>
+        ),
         duration: 2000,
+        style: { borderColor: '#C4B5FD', color: '#6B21A8' },
       });
     } catch (err) {
       // Fallback: show code in toast for manual copy
       toast.info(`Code: ${code}`, {
-        description: 'Click to select and copy manually',
+        description: (
+          <span className="text-[#6B21A8]">
+            Click to select and copy manually
+          </span>
+        ),
         duration: 5000,
+        style: { borderColor: '#C4B5FD', color: '#6B21A8' },
       });
     }
   };
@@ -114,15 +129,25 @@ export function AdminDashboard({ onNavigate, onLogout }: AdminDashboardProps) {
   const handleDeleteInvitation = (id: number, email: string) => {
     setInvitations(invitations.filter(inv => inv.id !== id));
     toast.success('🗑️ Invitation Deleted', {
-      description: `Invitation for ${email} has been removed`,
+      description: (
+        <span className="text-[#6B21A8]">
+          Invitation for {email} has been removed
+        </span>
+      ),
       duration: 3000,
+      style: { borderColor: '#C4B5FD', color: '#6B21A8' },
     });
   };
 
   const handleResendInvitation = (code: string, email: string) => {
     toast.success('📧 Invitation Resent!', {
-      description: `Code ${code} has been resent to ${email}`,
+      description: (
+        <span className="text-[#6B21A8]">
+          Code {code} has been resent to {email}
+        </span>
+      ),
       duration: 3000,
+      style: { borderColor: '#C4B5FD', color: '#6B21A8' },
     });
   };
 
@@ -166,8 +191,13 @@ The StudyHabit Team`;
       // Try modern clipboard API first
       await navigator.clipboard.writeText(emailPreviewContent);
       toast.success('📋 Copied to Clipboard!', {
-        description: 'Email template copied successfully',
+        description: (
+          <span className="text-[#6B21A8]">
+            Email template copied successfully
+          </span>
+        ),
         duration: 2000,
+        style: { borderColor: '#C4B5FD', color: '#6B21A8' },
       });
     } catch (err) {
       // Fallback: select the text
@@ -175,8 +205,13 @@ The StudyHabit Team`;
       if (textarea) {
         textarea.select();
         toast.success('📧 Text Selected!', {
-          description: 'Press Ctrl+C (Cmd+C on Mac) to copy',
+          description: (
+            <span className="text-[#6B21A8]">
+              Press Ctrl+C (Cmd+C on Mac) to copy
+            </span>
+          ),
           duration: 3000,
+          style: { borderColor: '#C4B5FD', color: '#6B21A8' },
         });
       }
     }

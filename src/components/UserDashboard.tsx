@@ -73,7 +73,13 @@ export function UserDashboard({ onNavigate, onLogout }: UserDashboardProps) {
     
     // Show success toast
     toast.success(`Amazing! 🎉 You logged ${newSession.duration} hours of ${newSession.subject}! Keep crushing it! 💪`, {
+      description: (
+        <span className="text-[#6B21A8]">
+          Your study streak is on fire! 🔥
+        </span>
+      ),
       duration: 4000,
+      style: { borderColor: '#C4B5FD', color: '#6B21A8' },
     });
   };
 

@@ -37,14 +37,24 @@ export function InvitationPage({ onLogin, onNavigate }: InvitationPageProps) {
     
     if (!invitation) {
       toast.error('❌ Invalid Code', {
-        description: 'Please check your invitation code and try again.',
+        description: (
+          <span className="text-[#6B21A8]">
+            Please check your invitation code and try again.
+          </span>
+        ),
+        style: { borderColor: '#C4B5FD', color: '#6B21A8' },
       });
       return;
     }
     
     if (invitation.status === 'accepted') {
       toast.error('⚠️ Code Already Used', {
-        description: 'This invitation has already been activated.',
+        description: (
+          <span className="text-[#6B21A8]">
+            This invitation has already been activated.
+          </span>
+        ),
+        style: { borderColor: '#C4B5FD', color: '#6B21A8' },
       });
       return;
     }
@@ -53,7 +63,12 @@ export function InvitationPage({ onLogin, onNavigate }: InvitationPageProps) {
     setStep('password');
     
     toast.success('✅ Invitation Valid!', {
-      description: `Welcome ${invitation.name}! Set up your password to continue.`,
+      description: (
+        <span className="text-[#6B21A8]">
+          Welcome {invitation.name}! Set up your password to continue.
+        </span>
+      ),
+      style: { borderColor: '#C4B5FD', color: '#6B21A8' },
     });
   };
 
@@ -62,21 +77,36 @@ export function InvitationPage({ onLogin, onNavigate }: InvitationPageProps) {
     
     if (password.length < 8) {
       toast.error('❌ Password Too Short', {
-        description: 'Password must be at least 8 characters.',
+        description: (
+          <span className="text-[#6B21A8]">
+            Password must be at least 8 characters.
+          </span>
+        ),
+        style: { borderColor: '#C4B5FD', color: '#6B21A8' },
       });
       return;
     }
     
     if (password !== confirmPassword) {
       toast.error('❌ Passwords Don\'t Match', {
-        description: 'Please make sure both passwords match.',
+        description: (
+          <span className="text-[#6B21A8]">
+            Please make sure both passwords match.
+          </span>
+        ),
+        style: { borderColor: '#C4B5FD', color: '#6B21A8' },
       });
       return;
     }
     
     toast.success('🎉 Account Activated!', {
-      description: `Welcome to StudyHabit, ${verifiedInvitation?.name}! You're ready to start tracking your study sessions.`,
+      description: (
+        <span className="text-[#6B21A8]">
+          Welcome to StudyHabit, {verifiedInvitation?.name}! You're ready to start tracking your study sessions.
+        </span>
+      ),
       duration: 4000,
+      style: { borderColor: '#C4B5FD', color: '#6B21A8' },
     });
     
     setTimeout(() => {
