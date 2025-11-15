@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Button, buttonVariants } from './ui/button';
+import { useState, useEffect } from 'react';
+import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { Input } from './ui/input';
@@ -10,6 +10,9 @@ import { Badge } from './ui/badge';
 import { BookOpen, Plus, LogOut, TrendingUp, Clock, Target, Flame, Award, Star, Sparkles, Heart, Zap } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
+import { getCurrentUser } from '../lib/api/auth';
+import { createStudySession, getUserStudySessions, getWeeklyChartData, getUserStudyStats } from '../lib/api/study-sessions';
+import type { StudySession as StudySessionType } from '../lib/api/study-sessions';
 
 type Page = 'landing' | 'login' | 'signup' | 'dashboard' | 'admin' | 'subscription' | 'leaderboard';
 
@@ -17,24 +20,6 @@ interface UserDashboardProps {
   onNavigate: (page: Page) => void;
   onLogout: () => void;
 }
-
-interface StudySession {
-  id: number;
-  subject: string;
-  duration: number;
-  notes: string;
-  date: string;
-}
-
-const weeklyData = [
-  { day: 'Mon', hours: 3.5 },
-  { day: 'Tue', hours: 4.2 },
-  { day: 'Wed', hours: 2.8 },
-  { day: 'Thu', hours: 5.1 },
-  { day: 'Fri', hours: 3.9 },
-  { day: 'Sat', hours: 6.5 },
-  { day: 'Sun', hours: 4.3 },
-];
 
 const motivationalMessages = [
   "You're doing amazing! 🌟",
@@ -46,11 +31,17 @@ const motivationalMessages = [
 
 export function UserDashboard({ onNavigate, onLogout }: UserDashboardProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [sessions, setSessions] = useState<StudySession[]>([
-    { id: 1, subject: 'Mathematics', duration: 2.5, notes: 'Calculus problems - nailed it!', date: '2025-10-14' },
-    { id: 2, subject: 'Physics', duration: 1.5, notes: 'Quantum mechanics - mind blown! 🤯', date: '2025-10-14' },
-    { id: 3, subject: 'Chemistry', duration: 2, notes: 'Organic chemistry is fun!', date: '2025-10-13' },
-  ]);
+  const [sessions, setSessions] = useState<StudySessionType[]>([]);
+  const [weeklyData, setWeeklyData] = useState<{ date: string; hours: number }[]>([]);
+  const [subjectData, setSubjectData] = useState<{ subject: string; hours: number; emoji: string; color: string }[]>([]);
+  const [stats, setStats] = useState({
+    totalHours: 0,
+    streak: 0,
+    goalProgress: 0,
+    leaderboardPosition: 0
+  });
+  const [currentUser, setCurrentUser] = useState<{ fullName: string; email: string } | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const [newSession, setNewSession] = useState({
     subject: '',
@@ -58,34 +49,169 @@ export function UserDashboard({ onNavigate, onLogout }: UserDashboardProps) {
     notes: '',
   });
 
-  const handleAddSession = (e: React.FormEvent) => {
-    e.preventDefault();
-    const session: StudySession = {
-      id: sessions.length + 1,
-      subject: newSession.subject,
-      duration: parseFloat(newSession.duration),
-      notes: newSession.notes,
-      date: new Date().toISOString().split('T')[0],
-    };
-    setSessions([session, ...sessions]);
-    setNewSession({ subject: '', duration: '', notes: '' });
-    setIsDialogOpen(false);
-    
-    // Show success toast
-    toast.success(`Amazing! 🎉 You logged ${newSession.duration} hours of ${newSession.subject}! Keep crushing it! 💪`, {
-      description: (
-        <span className="text-[#6B21A8]">
-          Your study streak is on fire! 🔥
-        </span>
-      ),
-      duration: 4000,
-      style: { borderColor: '#C4B5FD', color: '#6B21A8' },
-    });
+  // Load user data
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      
+      // Get current user
+      const user = await getCurrentUser();
+      if (!user) {
+        onNavigate('login');
+        return;
+      }
+      setCurrentUser({ fullName: user.fullName, email: user.email });
+
+      // Get study sessions
+      const userSessions = await getUserStudySessions(user.id);
+      setSessions(userSessions);
+
+      // Get weekly chart data
+      const chartData = await getWeeklyChartData(user.id);
+      setWeeklyData(chartData);
+
+      // Get stats
+      const userStats = await getUserStudyStats(user.id);
+      
+      // Calculate subject breakdown
+      const subjectHours: { [key: string]: number } = {};
+      userSessions.forEach(s => {
+        subjectHours[s.subject] = (subjectHours[s.subject] || 0) + Number(s.duration_hours);
+      });
+      
+      const subjectEmojis: { [key: string]: string } = {
+        'Mathematics': '🔢',
+        'Physics': '⚛️',
+        'Chemistry': '🧪',
+        'English': '📖',
+        'Biology': '🧬',
+        'History': '📜'
+      };
+
+      const subjectColors = [
+        'from-blue-500 to-blue-600',
+        'from-blue-600 to-sky-500',
+        'from-sky-500 to-blue-500',
+        'from-blue-400 to-sky-400',
+        'from-blue-500 to-sky-500',
+        'from-sky-400 to-blue-600'
+      ];
+
+      const subjects = Object.entries(subjectHours)
+        .map(([subject, hours], index) => ({
+          subject,
+          hours,
+          emoji: subjectEmojis[subject] || '📚',
+          color: subjectColors[index % subjectColors.length]
+        }))
+        .sort((a, b) => b.hours - a.hours);
+
+      setSubjectData(subjects);
+
+      // Calculate streak (simplified - count consecutive days with sessions)
+      const today = new Date();
+      let streak = 0;
+      for (let i = 0; i < 365; i++) {
+        const checkDate = new Date(today);
+        checkDate.setDate(today.getDate() - i);
+        const dateStr = checkDate.toISOString().split('T')[0];
+        const hasSession = userSessions.some(s => s.session_date.startsWith(dateStr));
+        if (hasSession) {
+          streak++;
+        } else if (i > 0) {
+          break;
+        }
+      }
+
+      // Calculate goal progress (e.g., 40 hours per month)
+      const goalHours = 40;
+      const progress = Math.min(100, Math.round((userStats.monthlyHours / goalHours) * 100));
+
+      setStats({
+        totalHours: userStats.weeklyHours,
+        streak,
+        goalProgress: progress,
+        leaderboardPosition: 0 // Will be updated from leaderboard API
+      });
+
+    } catch (error) {
+      console.error('Error loading data:', error);
+      toast.error('Failed to load data', {
+        description: (
+          <span className="text-[#6B21A8]">
+            Please try refreshing the page
+          </span>
+        ),
+        style: { borderColor: '#C4B5FD', color: '#6B21A8' },
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const totalHours = sessions.reduce((acc, s) => acc + s.duration, 0);
-  const streak = 12;
+  const handleAddSession = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      const user = await getCurrentUser();
+      if (!user) {
+        onNavigate('login');
+        return;
+      }
+
+      await createStudySession({
+        userId: user.id,
+        subject: newSession.subject,
+        durationHours: parseFloat(newSession.duration),
+        notes: newSession.notes || undefined,
+      });
+
+      setNewSession({ subject: '', duration: '', notes: '' });
+      setIsDialogOpen(false);
+      
+      // Show success toast
+      toast.success(`Amazing! 🎉 You logged ${newSession.duration} hours of ${newSession.subject}! Keep crushing it! 💪`, {
+        description: (
+          <span className="text-[#6B21A8]">
+            Your study streak is on fire! 🔥
+          </span>
+        ),
+        duration: 4000,
+        style: { borderColor: '#C4B5FD', color: '#6B21A8' },
+      });
+
+      // Reload data
+      loadData();
+    } catch (error) {
+      console.error('Error adding session:', error);
+      toast.error('Failed to add session', {
+        description: (
+          <span className="text-[#6B21A8]">
+            Please try again
+          </span>
+        ),
+        style: { borderColor: '#C4B5FD', color: '#6B21A8' },
+      });
+    }
+  };
+
   const randomMessage = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
+  const maxSubjectHours = Math.max(...subjectData.map(s => s.hours), 1);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600">Loading your study data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
@@ -121,15 +247,13 @@ export function UserDashboard({ onNavigate, onLogout }: UserDashboardProps) {
             <div className="flex items-center gap-4">
               <div className="hidden md:block text-right">
                 <div className="text-slate-900 flex items-center gap-2">
-                  Alex Johnson <Star className="w-4 h-4 text-yellow-500" />
+                  {currentUser?.fullName || 'Student'} <Star className="w-4 h-4 text-yellow-500" />
                 </div>
                 <div className="text-slate-500">Super Student! 🎓</div>
               </div>
               <Button 
-                variant="outline" 
-                size="icon"
                 onClick={onLogout}
-                className="border-2 border-blue-300 rounded-full hover:bg-blue-50"
+                className="border-2 border-blue-300 rounded-full hover:bg-blue-50 p-2"
               >
                 <LogOut className="w-4 h-4 text-blue-600" />
               </Button>
@@ -145,8 +269,8 @@ export function UserDashboard({ onNavigate, onLogout }: UserDashboardProps) {
           <div className="absolute top-0 right-0 text-8xl opacity-20">🎓</div>
           <div className="absolute bottom-0 left-0 text-6xl opacity-20">✨</div>
           <div className="relative">
-            <h2 className="text-white mb-2">Hey Alex! Ready to crush it today? 💪</h2>
-            <p className="text-white/90">You're on a {streak}-day streak! Keep the momentum going! 🔥</p>
+            <h2 className="text-white mb-2">Hey {currentUser?.fullName?.split(' ')[0] || 'there'}! Ready to crush it today? 💪</h2>
+            <p className="text-white/90">You're on a {stats.streak}-day streak! Keep the momentum going! 🔥</p>
           </div>
         </div>
 
@@ -160,7 +284,7 @@ export function UserDashboard({ onNavigate, onLogout }: UserDashboardProps) {
                 </div>
                 <TrendingUp className="w-6 h-6 text-green-600" />
               </div>
-              <div className="text-slate-900 mt-2">{totalHours.toFixed(1)} hrs 📚</div>
+              <div className="text-slate-900 mt-2">{stats.totalHours.toFixed(1)} hrs 📚</div>
               <p className="text-slate-500">This Week's Study Time</p>
             </CardContent>
           </Card>
@@ -172,7 +296,7 @@ export function UserDashboard({ onNavigate, onLogout }: UserDashboardProps) {
                   <Flame className="w-7 h-7 text-white" />
                 </div>
               </div>
-              <div className="text-slate-900 mt-2">{streak} days 🔥</div>
+              <div className="text-slate-900 mt-2">{stats.streak} days 🔥</div>
               <p className="text-slate-500">Current Streak - Amazing!</p>
             </CardContent>
           </Card>
@@ -184,7 +308,7 @@ export function UserDashboard({ onNavigate, onLogout }: UserDashboardProps) {
                   <Target className="w-7 h-7 text-white" />
                 </div>
               </div>
-              <div className="text-slate-900 mt-2">85% 🎯</div>
+              <div className="text-slate-900 mt-2">{stats.goalProgress}% 🎯</div>
               <p className="text-slate-500">Goal Progress - So Close!</p>
             </CardContent>
           </Card>
@@ -196,8 +320,8 @@ export function UserDashboard({ onNavigate, onLogout }: UserDashboardProps) {
                   <Award className="w-7 h-7 text-white" />
                 </div>
               </div>
-              <div className="text-slate-900 mt-2">#12 🏆</div>
-              <p className="text-slate-500">Leaderboard Position</p>
+              <div className="text-slate-900 mt-2">🏆</div>
+              <p className="text-slate-500">Keep Studying!</p>
             </CardContent>
           </Card>
         </div>
@@ -219,29 +343,38 @@ export function UserDashboard({ onNavigate, onLogout }: UserDashboardProps) {
                 </div>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={weeklyData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#dbeafe" />
-                    <XAxis dataKey="day" stroke="#3b82f6" />
-                    <YAxis stroke="#3b82f6" />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'white', 
-                        border: '2px solid #dbeafe',
-                        borderRadius: '16px',
-                        boxShadow: '0 10px 25px rgba(59, 130, 246, 0.15)'
-                      }}
-                    />
-                    <Bar dataKey="hours" fill="url(#blueGradient)" radius={[12, 12, 0, 0]} />
-                    <defs>
-                      <linearGradient id="blueGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#3B82F6" />
-                        <stop offset="50%" stopColor="#60A5FA" />
-                        <stop offset="100%" stopColor="#93C5FD" />
-                      </linearGradient>
-                    </defs>
-                  </BarChart>
-                </ResponsiveContainer>
+                {weeklyData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={weeklyData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#dbeafe" />
+                      <XAxis dataKey="date" stroke="#3b82f6" />
+                      <YAxis stroke="#3b82f6" />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'white', 
+                          border: '2px solid #dbeafe',
+                          borderRadius: '16px',
+                          boxShadow: '0 10px 25px rgba(59, 130, 246, 0.15)'
+                        }}
+                      />
+                      <Bar dataKey="hours" fill="url(#blueGradient)" radius={[12, 12, 0, 0]} />
+                      <defs>
+                        <linearGradient id="blueGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#3B82F6" />
+                          <stop offset="50%" stopColor="#60A5FA" />
+                          <stop offset="100%" stopColor="#93C5FD" />
+                        </linearGradient>
+                      </defs>
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-[300px] flex items-center justify-center text-slate-400">
+                    <div className="text-center">
+                      <p className="mb-2">No study data yet</p>
+                      <p className="text-sm">Start logging sessions to see your progress! 🚀</p>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -255,30 +388,32 @@ export function UserDashboard({ onNavigate, onLogout }: UserDashboardProps) {
                 <CardDescription className="text-slate-600">See where you're spending your time! 🎨</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {[
-                    { subject: 'Mathematics', hours: 12.5, emoji: '🔢', color: 'from-blue-500 to-blue-600' },
-                    { subject: 'Physics', hours: 10.2, emoji: '⚛️', color: 'from-blue-600 to-sky-500' },
-                    { subject: 'Chemistry', hours: 8.7, emoji: '🧪', color: 'from-sky-500 to-blue-500' },
-                    { subject: 'English', hours: 6.3, emoji: '📖', color: 'from-blue-400 to-sky-400' },
-                  ].map((item) => (
-                    <div key={item.subject} className="p-4 bg-blue-50 rounded-2xl border border-blue-200">
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-slate-900 flex items-center gap-2">
-                          <span className="text-2xl">{item.emoji}</span>
-                          {item.subject}
-                        </span>
-                        <span className="text-slate-600">{item.hours} hrs</span>
+                {subjectData.length > 0 ? (
+                  <div className="space-y-4">
+                    {subjectData.map((item) => (
+                      <div key={item.subject} className="p-4 bg-blue-50 rounded-2xl border border-blue-200">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-slate-900 flex items-center gap-2">
+                            <span className="text-2xl">{item.emoji}</span>
+                            {item.subject}
+                          </span>
+                          <span className="text-slate-600">{item.hours.toFixed(1)} hrs</span>
+                        </div>
+                        <div className="w-full bg-white rounded-full h-3 shadow-inner">
+                          <div 
+                            className={`h-3 rounded-full bg-gradient-to-r ${item.color} transition-all shadow-md`}
+                            style={{ width: `${(item.hours / maxSubjectHours) * 100}%` }}
+                          />
+                        </div>
                       </div>
-                      <div className="w-full bg-white rounded-full h-3 shadow-inner">
-                        <div 
-                          className={`h-3 rounded-full bg-gradient-to-r ${item.color} transition-all shadow-md`}
-                          style={{ width: `${(item.hours / 12.5) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-slate-400">
+                    <p className="mb-2">No subjects tracked yet</p>
+                    <p className="text-sm">Add your first study session to get started! 📖</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -383,25 +518,33 @@ export function UserDashboard({ onNavigate, onLogout }: UserDashboardProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {sessions.slice(0, 5).map((session) => (
-                    <div key={session.id} className="flex items-start gap-3 p-4 bg-blue-50 rounded-2xl hover:shadow-md transition-shadow border border-blue-200">
-                      <div className="w-12 h-12 bg-gradient-to-br from-sky-500 to-blue-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
-                        <BookOpen className="w-6 h-6 text-white" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-slate-900">{session.subject}</span>
-                          <Badge className="bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0 rounded-full">
-                            {session.duration}h ⏱️
-                          </Badge>
+                {sessions.length > 0 ? (
+                  <div className="space-y-3">
+                    {sessions.slice(0, 5).map((session) => (
+                      <div key={session.id} className="flex items-start gap-3 p-4 bg-blue-50 rounded-2xl hover:shadow-md transition-shadow border border-blue-200">
+                        <div className="w-12 h-12 bg-gradient-to-br from-sky-500 to-blue-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
+                          <BookOpen className="w-6 h-6 text-white" />
                         </div>
-                        <p className="text-slate-600 text-xs truncate">{session.notes}</p>
-                        <p className="text-slate-400 text-xs mt-1">📅 {session.date}</p>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-slate-900">{session.subject}</span>
+                            <Badge className="bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0 rounded-full">
+                              {session.duration_hours}h ⏱️
+                            </Badge>
+                          </div>
+                          <p className="text-slate-600 text-xs truncate">{session.notes || 'No notes'}</p>
+                          <p className="text-slate-400 text-xs mt-1">📅 {new Date(session.session_date).toLocaleDateString()}</p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-slate-400">
+                    <BookOpen className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p className="mb-2">No sessions yet</p>
+                    <p className="text-sm">Log your first study session! 🎯</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 

@@ -1,4 +1,3 @@
-// ImageWithFallback — displays an image normally,  image fails to load, it automatically shows a default error image instead.
 import React, { useState } from 'react'
 
 const ERROR_IMG_SRC =

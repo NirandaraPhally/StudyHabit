@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
@@ -7,10 +7,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { Label } from './ui/label';
-import { Textarea } from './ui/textarea';
 import { toast } from 'sonner';
 import { BookOpen, LogOut, Users, TrendingUp, Clock, Activity, Search, Filter, Check, UserPlus, Mail, Copy, Trash2, MoreVertical } from 'lucide-react';
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { getCurrentUser } from '../lib/api/auth';
+import { createInvitation, getOrganizationInvitations, deleteInvitation, resendInvitation } from '../lib/api/invitations';
+import type { Invitation } from '../lib/api/invitations';
+import { supabase } from '../lib/supabase';
 
 type Page = 'landing' | 'login' | 'signup' | 'dashboard' | 'admin' | 'subscription' | 'leaderboard' | 'invitation';
 
@@ -19,44 +22,186 @@ interface AdminDashboardProps {
   onLogout: () => void;
 }
 
-const activityData = [
-  { month: 'Apr', users: 850, hours: 4200 },
-  { month: 'May', users: 920, hours: 4800 },
-  { month: 'Jun', users: 1100, hours: 5500 },
-  { month: 'Jul', users: 1250, hours: 6200 },
-  { month: 'Aug', users: 1400, hours: 7100 },
-  { month: 'Sep', users: 1580, hours: 8000 },
-  { month: 'Oct', users: 1720, hours: 8900 },
-];
-
-const users = [
-  { id: 1, name: 'Alex Johnson', email: 'alex@example.com', hours: 45.5, streak: 12, status: 'active' },
-  { id: 2, name: 'Sarah Miller', email: 'sarah@example.com', hours: 52.3, streak: 18, status: 'active' },
-  { id: 3, name: 'Mike Chen', email: 'mike@example.com', hours: 38.2, streak: 8, status: 'active' },
-  { id: 4, name: 'Emma Davis', email: 'emma@example.com', hours: 61.7, streak: 25, status: 'active' },
-  { id: 5, name: 'James Wilson', email: 'james@example.com', hours: 29.4, streak: 5, status: 'inactive' },
-  { id: 6, name: 'Olivia Brown', email: 'olivia@example.com', hours: 48.9, streak: 14, status: 'active' },
-];
+interface UserData {
+  id: string;
+  name: string;
+  email: string;
+  hours: number;
+  streak: number;
+  status: 'active' | 'inactive';
+}
 
 export function AdminDashboard({ onNavigate, onLogout }: AdminDashboardProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<typeof users[0] | null>(null);
+  const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [isUserDetailOpen, setIsUserDetailOpen] = useState(false);
   const [isEmailPreviewOpen, setIsEmailPreviewOpen] = useState(false);
   const [emailPreviewContent, setEmailPreviewContent] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [currentAdmin, setCurrentAdmin] = useState<{ fullName: string; organizationId: string } | null>(null);
   
   // Invitation form state
   const [inviteName, setInviteName] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
   
-  // Mock invitations data
-  const [invitations, setInvitations] = useState([
-    { id: 1, code: 'STUDY2025', email: 'student@example.com', name: 'John Doe', status: 'pending', createdAt: '2025-10-15' },
-    { id: 2, code: 'LEARN123', email: 'jane@example.com', name: 'Jane Smith', status: 'pending', createdAt: '2025-10-16' },
-    { id: 3, code: 'MATH456', email: 'mike@example.com', name: 'Mike Johnson', status: 'accepted', createdAt: '2025-10-14' },
-  ]);
+  // Data state
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
+  const [users, setUsers] = useState<UserData[]>([]);
+  const [activityData, setActivityData] = useState<{ month: string; users: number; hours: number }[]>([]);
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    activeUsers: 0,
+    totalHours: 0,
+    avgHours: 0
+  });
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      
+      // Get current admin user
+      const user = await getCurrentUser();
+      if (!user || user.role !== 'admin') {
+        onNavigate('login');
+        return;
+      }
+      
+      if (!user.organizationId) {
+        toast.error('No organization found', {
+          description: (
+            <span className="text-[#6B21A8]">
+              Please contact support
+            </span>
+          ),
+          style: { borderColor: '#C4B5FD', color: '#6B21A8' },
+        });
+        return;
+      }
+
+      setCurrentAdmin({ fullName: user.fullName, organizationId: user.organizationId });
+
+      // Get invitations
+      const orgInvitations = await getOrganizationInvitations(user.organizationId);
+      setInvitations(orgInvitations);
+
+      // Get all students in organization with their study hours
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .eq('organization_id', user.organizationId)
+        .eq('role', 'student');
+
+      if (profilesError) throw profilesError;
+
+      // Get study sessions for each student
+      const usersWithStats = await Promise.all(
+        profiles.map(async (profile) => {
+          const { data: sessions, error } = await supabase
+            .from('study_sessions')
+            .select('duration_hours, session_date')
+            .eq('user_id', profile.id);
+
+          if (error) throw error;
+
+          const totalHours = sessions.reduce((sum, s) => sum + Number(s.duration_hours), 0);
+          
+          // Calculate streak
+          const today = new Date();
+          let streak = 0;
+          for (let i = 0; i < 365; i++) {
+            const checkDate = new Date(today);
+            checkDate.setDate(today.getDate() - i);
+            const dateStr = checkDate.toISOString().split('T')[0];
+            const hasSession = sessions.some(s => s.session_date.startsWith(dateStr));
+            if (hasSession) {
+              streak++;
+            } else if (i > 0) {
+              break;
+            }
+          }
+
+          // Determine active status (studied in last 7 days)
+          const weekAgo = new Date();
+          weekAgo.setDate(weekAgo.getDate() - 7);
+          const isActive = sessions.some(s => new Date(s.session_date) >= weekAgo);
+
+          return {
+            id: profile.id,
+            name: profile.full_name,
+            email: profile.email,
+            hours: totalHours,
+            streak,
+            status: isActive ? 'active' as const : 'inactive' as const
+          };
+        })
+      );
+
+      setUsers(usersWithStats);
+
+      // Calculate stats
+      const totalUsers = usersWithStats.length;
+      const activeUsers = usersWithStats.filter(u => u.status === 'active').length;
+      const totalHours = usersWithStats.reduce((sum, u) => sum + u.hours, 0);
+      const avgHours = totalUsers > 0 ? totalHours / totalUsers : 0;
+
+      setStats({
+        totalUsers,
+        activeUsers,
+        totalHours,
+        avgHours
+      });
+
+      // Get monthly activity data (last 7 months)
+      const monthlyData = [];
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setMonth(date.getMonth() - i);
+        const monthName = date.toLocaleDateString('en-US', { month: 'short' });
+        
+        const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+        const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+
+        // Get sessions for this month
+        const { data: monthSessions, error } = await supabase
+          .from('study_sessions')
+          .select('duration_hours, user_id')
+          .gte('session_date', monthStart.toISOString())
+          .lte('session_date', monthEnd.toISOString());
+
+        if (error) throw error;
+
+        const monthHours = monthSessions.reduce((sum, s) => sum + Number(s.duration_hours), 0);
+        const uniqueUsers = new Set(monthSessions.map(s => s.user_id)).size;
+
+        monthlyData.push({
+          month: monthName,
+          users: uniqueUsers,
+          hours: monthHours
+        });
+      }
+
+      setActivityData(monthlyData);
+
+    } catch (error) {
+      console.error('Error loading data:', error);
+      toast.error('Failed to load data', {
+        description: (
+          <span className="text-[#6B21A8]">
+            Please try refreshing the page
+          </span>
+        ),
+        style: { borderColor: '#C4B5FD', color: '#6B21A8' },
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -65,39 +210,57 @@ export function AdminDashboard({ onNavigate, onLogout }: AdminDashboardProps) {
     return matchesSearch && matchesStatus;
   });
 
-  const handleSendInvitation = (e: React.FormEvent) => {
+  const handleSendInvitation = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Generate random invitation code
-    const code = 'STUDY' + Math.random().toString(36).substring(2, 8).toUpperCase();
-    
-    // Add new invitation
-    const newInvitation = {
-      id: invitations.length + 1,
-      code,
-      email: inviteEmail,
-      name: inviteName,
-      status: 'pending' as const,
-      createdAt: new Date().toISOString().split('T')[0],
-    };
-    
-    setInvitations([newInvitation, ...invitations]);
-    
-    // Reset form
-    setInviteName('');
-    setInviteEmail('');
-    setIsInviteDialogOpen(false);
-    
-    // Show success notification
-    toast.success('📧 Invitation Sent!', {
-      description: (
-        <span className="text-[#6B21A8]">
-          Invitation code {code} sent to {inviteEmail}
-        </span>
-      ),
-      duration: 5000,
-      style: { borderColor: '#C4B5FD', color: '#6B21A8' },
-    });
+    try {
+      if (!currentAdmin?.organizationId) {
+        toast.error('No organization found');
+        return;
+      }
+
+      const user = await getCurrentUser();
+      if (!user) {
+        onNavigate('login');
+        return;
+      }
+
+      const invitation = await createInvitation({
+        organizationId: currentAdmin.organizationId,
+        studentName: inviteName,
+        studentEmail: inviteEmail,
+        createdBy: user.id
+      });
+      
+      // Reset form
+      setInviteName('');
+      setInviteEmail('');
+      setIsInviteDialogOpen(false);
+      
+      // Show success notification
+      toast.success('📧 Invitation Sent!', {
+        description: (
+          <span className="text-[#6B21A8]">
+            Invitation code {invitation.invitation_code} sent to {inviteEmail}
+          </span>
+        ),
+        duration: 5000,
+        style: { borderColor: '#C4B5FD', color: '#6B21A8' },
+      });
+
+      // Reload data
+      loadData();
+    } catch (error) {
+      console.error('Error sending invitation:', error);
+      toast.error('Failed to send invitation', {
+        description: (
+          <span className="text-[#6B21A8]">
+            Please try again
+          </span>
+        ),
+        style: { borderColor: '#C4B5FD', color: '#6B21A8' },
+      });
+    }
   };
 
   const handleCopyCode = async (code: string) => {
@@ -113,7 +276,6 @@ export function AdminDashboard({ onNavigate, onLogout }: AdminDashboardProps) {
         style: { borderColor: '#C4B5FD', color: '#6B21A8' },
       });
     } catch (err) {
-      // Fallback: show code in toast for manual copy
       toast.info(`Code: ${code}`, {
         description: (
           <span className="text-[#6B21A8]">
@@ -126,32 +288,45 @@ export function AdminDashboard({ onNavigate, onLogout }: AdminDashboardProps) {
     }
   };
 
-  const handleDeleteInvitation = (id: number, email: string) => {
-    setInvitations(invitations.filter(inv => inv.id !== id));
-    toast.success('🗑️ Invitation Deleted', {
-      description: (
-        <span className="text-[#6B21A8]">
-          Invitation for {email} has been removed
-        </span>
-      ),
-      duration: 3000,
-      style: { borderColor: '#C4B5FD', color: '#6B21A8' },
-    });
+  const handleDeleteInvitation = async (id: string, email: string) => {
+    try {
+      await deleteInvitation(id);
+      toast.success('🗑️ Invitation Deleted', {
+        description: (
+          <span className="text-[#6B21A8]">
+            Invitation for {email} has been removed
+          </span>
+        ),
+        duration: 3000,
+        style: { borderColor: '#C4B5FD', color: '#6B21A8' },
+      });
+      loadData();
+    } catch (error) {
+      console.error('Error deleting invitation:', error);
+      toast.error('Failed to delete invitation');
+    }
   };
 
-  const handleResendInvitation = (code: string, email: string) => {
-    toast.success('📧 Invitation Resent!', {
-      description: (
-        <span className="text-[#6B21A8]">
-          Code {code} has been resent to {email}
-        </span>
-      ),
-      duration: 3000,
-      style: { borderColor: '#C4B5FD', color: '#6B21A8' },
-    });
+  const handleResendInvitation = async (invitationId: string, email: string) => {
+    try {
+      const updated = await resendInvitation(invitationId);
+      toast.success('📧 Invitation Resent!', {
+        description: (
+          <span className="text-[#6B21A8]">
+            Code {updated.invitation_code} has been resent to {email}
+          </span>
+        ),
+        duration: 3000,
+        style: { borderColor: '#C4B5FD', color: '#6B21A8' },
+      });
+      loadData();
+    } catch (error) {
+      console.error('Error resending invitation:', error);
+      toast.error('Failed to resend invitation');
+    }
   };
 
-  const handleViewUserDetails = (user: typeof users[0]) => {
+  const handleViewUserDetails = (user: UserData) => {
     setSelectedUser(user);
     setIsUserDetailOpen(true);
   };
@@ -188,7 +363,6 @@ The StudyHabit Team`;
 
   const handleCopyEmailTemplate = async () => {
     try {
-      // Try modern clipboard API first
       await navigator.clipboard.writeText(emailPreviewContent);
       toast.success('📋 Copied to Clipboard!', {
         description: (
@@ -200,7 +374,6 @@ The StudyHabit Team`;
         style: { borderColor: '#C4B5FD', color: '#6B21A8' },
       });
     } catch (err) {
-      // Fallback: select the text
       const textarea = document.getElementById('email-preview-textarea') as HTMLTextAreaElement;
       if (textarea) {
         textarea.select();
@@ -217,10 +390,16 @@ The StudyHabit Team`;
     }
   };
 
-  const totalUsers = users.length;
-  const activeUsers = users.filter(u => u.status === 'active').length;
-  const totalHours = users.reduce((acc, u) => acc + u.hours, 0);
-  const avgHours = totalHours / totalUsers;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600">Loading admin data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
@@ -240,7 +419,7 @@ The StudyHabit Team`;
 
             <div className="flex items-center gap-4">
               <div className="hidden md:block text-right">
-                <div className="text-slate-900">Admin User</div>
+                <div className="text-slate-900">{currentAdmin?.fullName || 'Admin User'}</div>
                 <div className="text-slate-500">Administrator</div>
               </div>
               <Button 
@@ -268,7 +447,7 @@ The StudyHabit Team`;
                 </div>
                 <TrendingUp className="w-6 h-6 text-green-600" />
               </div>
-              <div className="text-slate-900 mt-2">{totalUsers}</div>
+              <div className="text-slate-900 mt-2">{stats.totalUsers}</div>
               <p className="text-slate-500">Total Users</p>
             </CardContent>
           </Card>
@@ -280,7 +459,7 @@ The StudyHabit Team`;
                   <Activity className="w-7 h-7 text-white" />
                 </div>
               </div>
-              <div className="text-slate-900 mt-2">{activeUsers}</div>
+              <div className="text-slate-900 mt-2">{stats.activeUsers}</div>
               <p className="text-slate-500">Active Users</p>
             </CardContent>
           </Card>
@@ -292,7 +471,7 @@ The StudyHabit Team`;
                   <Clock className="w-7 h-7 text-white" />
                 </div>
               </div>
-              <div className="text-slate-900 mt-2">{totalHours.toFixed(0)} hrs</div>
+              <div className="text-slate-900 mt-2">{stats.totalHours.toFixed(0)} hrs</div>
               <p className="text-slate-500">Total Study Hours</p>
             </CardContent>
           </Card>
@@ -304,7 +483,7 @@ The StudyHabit Team`;
                   <TrendingUp className="w-7 h-7 text-white" />
                 </div>
               </div>
-              <div className="text-slate-900 mt-2">{avgHours.toFixed(1)} hrs</div>
+              <div className="text-slate-900 mt-2">{stats.avgHours.toFixed(1)} hrs</div>
               <p className="text-slate-500">Avg Per User</p>
             </CardContent>
           </Card>
@@ -318,35 +497,41 @@ The StudyHabit Team`;
               <CardDescription className="text-slate-600">Active users over time</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <AreaChart data={activityData}>
-                  <defs>
-                    <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.1}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#dbeafe" />
-                  <XAxis dataKey="month" stroke="#3b82f6" />
-                  <YAxis stroke="#3b82f6" />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'white', 
-                      border: '2px solid #dbeafe',
-                      borderRadius: '16px',
-                      boxShadow: '0 10px 25px rgba(59, 130, 246, 0.15)'
-                    }}
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="users" 
-                    stroke="#3B82F6" 
-                    strokeWidth={3}
-                    fillOpacity={1} 
-                    fill="url(#colorUsers)" 
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+              {activityData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <AreaChart data={activityData}>
+                    <defs>
+                      <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.1}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#dbeafe" />
+                    <XAxis dataKey="month" stroke="#3b82f6" />
+                    <YAxis stroke="#3b82f6" />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'white', 
+                        border: '2px solid #dbeafe',
+                        borderRadius: '16px',
+                        boxShadow: '0 10px 25px rgba(59, 130, 246, 0.15)'
+                      }}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="users" 
+                      stroke="#3B82F6" 
+                      strokeWidth={3}
+                      fillOpacity={1} 
+                      fill="url(#colorUsers)" 
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[300px] flex items-center justify-center text-slate-400">
+                  <p>No data available yet</p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -357,29 +542,35 @@ The StudyHabit Team`;
               <CardDescription className="text-slate-600">Total platform study hours</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={activityData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#dbeafe" />
-                  <XAxis dataKey="month" stroke="#3b82f6" />
-                  <YAxis stroke="#3b82f6" />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'white', 
-                      border: '2px solid #dbeafe',
-                      borderRadius: '16px',
-                      boxShadow: '0 10px 25px rgba(96, 165, 250, 0.15)'
-                    }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="hours" 
-                    stroke="#60A5FA" 
-                    strokeWidth={3}
-                    dot={{ fill: '#60A5FA', r: 6 }}
-                    activeDot={{ r: 8 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              {activityData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={activityData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#dbeafe" />
+                    <XAxis dataKey="month" stroke="#3b82f6" />
+                    <YAxis stroke="#3b82f6" />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'white', 
+                        border: '2px solid #dbeafe',
+                        borderRadius: '16px',
+                        boxShadow: '0 10px 25px rgba(96, 165, 250, 0.15)'
+                      }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="hours" 
+                      stroke="#60A5FA" 
+                      strokeWidth={3}
+                      dot={{ fill: '#60A5FA', r: 6 }}
+                      activeDot={{ r: 8 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[300px] flex items-center justify-center text-slate-400">
+                  <p>No data available yet</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -475,17 +666,17 @@ The StudyHabit Team`;
                   <TableBody>
                     {invitations.map((invitation) => (
                       <TableRow key={invitation.id} className="border-b border-purple-100 hover:bg-purple-50/50">
-                        <TableCell className="text-slate-900">{invitation.name}</TableCell>
-                        <TableCell className="text-slate-600">{invitation.email}</TableCell>
+                        <TableCell className="text-slate-900">{invitation.student_name}</TableCell>
+                        <TableCell className="text-slate-600">{invitation.student_email}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <code className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg font-mono text-sm">
-                              {invitation.code}
+                              {invitation.invitation_code}
                             </code>
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleCopyCode(invitation.code)}
+                              onClick={() => handleCopyCode(invitation.invitation_code)}
                               className="h-8 w-8 p-0 hover:bg-purple-100"
                             >
                               <Copy className="w-3 h-3 text-purple-600" />
@@ -497,13 +688,17 @@ The StudyHabit Team`;
                             <Badge variant="outline" className="border-yellow-500 text-yellow-700 bg-yellow-50">
                               ⏳ Pending
                             </Badge>
-                          ) : (
+                          ) : invitation.status === 'accepted' ? (
                             <Badge variant="outline" className="border-green-500 text-green-700 bg-green-50">
                               ✅ Accepted
                             </Badge>
+                          ) : (
+                            <Badge variant="outline" className="border-red-500 text-red-700 bg-red-50">
+                              ❌ Expired
+                            </Badge>
                           )}
                         </TableCell>
-                        <TableCell className="text-slate-600">{invitation.createdAt}</TableCell>
+                        <TableCell className="text-slate-600">{new Date(invitation.created_at).toLocaleDateString()}</TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -513,21 +708,23 @@ The StudyHabit Team`;
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-52 rounded-xl border-2 border-purple-200">
                               <DropdownMenuItem 
-                                onClick={() => handlePreviewEmail(invitation.code, invitation.email, invitation.name)}
+                                onClick={() => handlePreviewEmail(invitation.invitation_code, invitation.student_email, invitation.student_name)}
                                 className="cursor-pointer rounded-lg"
                               >
                                 <Mail className="w-4 h-4 mr-2 text-green-600" />
                                 Preview Email Template
                               </DropdownMenuItem>
+                              {invitation.status === 'pending' && (
+                                <DropdownMenuItem 
+                                  onClick={() => handleResendInvitation(invitation.id, invitation.student_email)}
+                                  className="cursor-pointer rounded-lg"
+                                >
+                                  <Mail className="w-4 h-4 mr-2 text-blue-600" />
+                                  Resend Invitation
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuItem 
-                                onClick={() => handleResendInvitation(invitation.code, invitation.email)}
-                                className="cursor-pointer rounded-lg"
-                              >
-                                <Mail className="w-4 h-4 mr-2 text-blue-600" />
-                                Resend Invitation
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => handleCopyCode(invitation.code)}
+                                onClick={() => handleCopyCode(invitation.invitation_code)}
                                 className="cursor-pointer rounded-lg"
                               >
                                 <Copy className="w-4 h-4 mr-2 text-purple-600" />
@@ -535,7 +732,7 @@ The StudyHabit Team`;
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem 
-                                onClick={() => handleDeleteInvitation(invitation.id, invitation.email)}
+                                onClick={() => handleDeleteInvitation(invitation.id, invitation.student_email)}
                                 className="cursor-pointer rounded-lg text-red-600"
                               >
                                 <Trash2 className="w-4 h-4 mr-2" />
@@ -606,54 +803,62 @@ The StudyHabit Team`;
             </div>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-b border-blue-200">
-                    <TableHead className="text-slate-700">Name</TableHead>
-                    <TableHead className="text-slate-700">Email</TableHead>
-                    <TableHead className="text-slate-700">Study Hours</TableHead>
-                    <TableHead className="text-slate-700">Streak</TableHead>
-                    <TableHead className="text-slate-700">Status</TableHead>
-                    <TableHead className="text-right text-slate-700">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredUsers.map((user) => (
-                    <TableRow key={user.id} className="border-b border-blue-100 hover:bg-blue-50">
-                      <TableCell className="text-slate-900">{user.name}</TableCell>
-                      <TableCell className="text-slate-600">{user.email}</TableCell>
-                      <TableCell className="text-slate-900">{user.hours} hrs</TableCell>
-                      <TableCell>
-                        <Badge className="bg-gradient-to-r from-orange-400 to-red-400 text-white border-0 rounded-full">
-                          🔥 {user.streak} days
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge 
-                          className={user.status === 'active' 
-                            ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0 rounded-full' 
-                            : 'bg-slate-200 text-slate-700 border-0 rounded-full'
-                          }
-                        >
-                          {user.status === 'active' ? '✅ Active' : '⭕ Inactive'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => handleViewUserDetails(user)}
-                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-full"
-                        >
-                          View Details
-                        </Button>
-                      </TableCell>
+            {filteredUsers.length === 0 ? (
+              <div className="text-center py-12">
+                <Users className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                <p className="text-slate-500">No users found</p>
+                <p className="text-slate-400 text-sm mt-1">Invite students to get started</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-b border-blue-200">
+                      <TableHead className="text-slate-700">Name</TableHead>
+                      <TableHead className="text-slate-700">Email</TableHead>
+                      <TableHead className="text-slate-700">Study Hours</TableHead>
+                      <TableHead className="text-slate-700">Streak</TableHead>
+                      <TableHead className="text-slate-700">Status</TableHead>
+                      <TableHead className="text-right text-slate-700">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredUsers.map((user) => (
+                      <TableRow key={user.id} className="border-b border-blue-100 hover:bg-blue-50">
+                        <TableCell className="text-slate-900">{user.name}</TableCell>
+                        <TableCell className="text-slate-600">{user.email}</TableCell>
+                        <TableCell className="text-slate-900">{user.hours.toFixed(1)} hrs</TableCell>
+                        <TableCell>
+                          <Badge className="bg-gradient-to-r from-orange-400 to-red-400 text-white border-0 rounded-full">
+                            🔥 {user.streak} days
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            className={user.status === 'active' 
+                              ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0 rounded-full' 
+                              : 'bg-slate-200 text-slate-700 border-0 rounded-full'
+                            }
+                          >
+                            {user.status === 'active' ? '✅ Active' : '⭕ Inactive'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleViewUserDetails(user)}
+                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-full"
+                          >
+                            View Details
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </CardContent>
         </Card>
       </main>
@@ -669,7 +874,6 @@ The StudyHabit Team`;
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 mt-4">
-              {/* User Info */}
               <div className="bg-gradient-to-br from-blue-50 to-sky-50 p-6 rounded-2xl border-2 border-blue-200">
                 <div className="flex items-center gap-4 mb-4">
                   <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
@@ -692,39 +896,21 @@ The StudyHabit Team`;
                 </div>
               </div>
 
-              {/* Stats Grid */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-white p-4 rounded-xl border-2 border-blue-200">
                   <div className="flex items-center gap-2 mb-2">
                     <Clock className="w-5 h-5 text-blue-600" />
                     <span className="text-slate-600">Study Hours</span>
                   </div>
-                  <div className="text-slate-900">{selectedUser.hours} hours</div>
+                  <div className="text-slate-900">{selectedUser.hours.toFixed(1)} hrs</div>
                 </div>
-                <div className="bg-white p-4 rounded-xl border-2 border-orange-200">
+                <div className="bg-white p-4 rounded-xl border-2 border-blue-200">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xl">🔥</span>
-                    <span className="text-slate-600">Current Streak</span>
+                    <Activity className="w-5 h-5 text-orange-600" />
+                    <span className="text-slate-600">Streak</span>
                   </div>
-                  <div className="text-slate-900">{selectedUser.streak} days</div>
+                  <div className="text-slate-900">🔥 {selectedUser.streak} days</div>
                 </div>
-              </div>
-
-              {/* Additional Info */}
-              <div className="bg-blue-50 p-4 rounded-xl border-2 border-blue-200">
-                <div className="text-slate-700">User ID</div>
-                <div className="text-slate-900">#{selectedUser.id.toString().padStart(6, '0')}</div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-3 pt-4">
-                <Button 
-                  variant="outline"
-                  onClick={() => setIsUserDetailOpen(false)}
-                  className="w-full border-2 border-blue-300 text-blue-600 hover:bg-blue-50 rounded-xl"
-                >
-                  Close
-                </Button>
               </div>
             </div>
           </DialogContent>
@@ -735,50 +921,25 @@ The StudyHabit Team`;
       <Dialog open={isEmailPreviewOpen} onOpenChange={setIsEmailPreviewOpen}>
         <DialogContent className="sm:max-w-2xl rounded-3xl border-2 border-purple-200">
           <DialogHeader>
-            <DialogTitle className="text-slate-900">Email Preview 📧</DialogTitle>
+            <DialogTitle className="text-slate-900">Email Template Preview 📧</DialogTitle>
             <DialogDescription className="text-slate-600">
-              This is what students will receive in their invitation email
+              Copy this template to send to your student
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 mt-4">
-            {/* Email Preview */}
-            <div className="bg-purple-50 p-4 rounded-2xl border-2 border-purple-200">
-              <Textarea
-                id="email-preview-textarea"
-                value={emailPreviewContent}
-                readOnly
-                className="min-h-[400px] font-mono text-sm bg-white border-2 border-purple-300 rounded-xl resize-none"
-                onClick={(e) => {
-                  const target = e.target as HTMLTextAreaElement;
-                  target.select();
-                }}
-              />
-            </div>
-
-            {/* Helper Text */}
-            <div className="bg-blue-50 p-3 rounded-xl border-2 border-blue-200">
-              <p className="text-sm text-slate-700">
-                💡 <strong>Tip:</strong> Click the textarea to select all text, then press Ctrl+C (Cmd+C on Mac) to copy
-              </p>
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-3 pt-2">
-              <Button 
-                onClick={handleCopyEmailTemplate}
-                className="flex-1 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-xl"
-              >
-                <Copy className="w-4 h-4 mr-2" />
-                Copy to Clipboard
-              </Button>
-              <Button 
-                variant="outline"
-                onClick={() => setIsEmailPreviewOpen(false)}
-                className="border-2 border-slate-300 rounded-xl"
-              >
-                Close
-              </Button>
-            </div>
+            <textarea
+              id="email-preview-textarea"
+              value={emailPreviewContent}
+              readOnly
+              className="w-full h-96 p-4 bg-slate-50 border-2 border-purple-200 rounded-xl font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+            <Button
+              onClick={handleCopyEmailTemplate}
+              className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-xl"
+            >
+              <Copy className="w-4 h-4 mr-2" />
+              Copy Email Template
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

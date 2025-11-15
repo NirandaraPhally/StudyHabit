@@ -4,10 +4,6 @@
  */
 
 import { supabase } from '../supabase'
-import { Database } from '../database.types'
-
-type Profile = Database['public']['Tables']['profiles']['Row']
-type ProfileUpdate = Database['public']['Tables']['profiles']['Update']
 
 export interface LoginCredentials {
   email: string
@@ -46,21 +42,19 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   
   if (userError || !user) return null
 
-  const { data: profileData, error: profileError } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', user.id)
     .single()
 
-  if (profileError || !profileData) return null
-
-  const profile = profileData as Profile
+  if (profileError) return null
 
   return {
     id: profile.id,
     email: profile.email,
     fullName: profile.full_name,
-    role: profile.role as 'admin' | 'student',
+    role: profile.role,
     organizationId: profile.organization_id,
     avatarUrl: profile.avatar_url
   }
@@ -69,16 +63,16 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
 // Update user profile
 export async function updateUserProfile(updates: {
   fullName?: string
-  avatarUrl?: string | null
-}): Promise<Profile | null> {
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
-  if (userError || !user) throw new Error('Not authenticated')
+  avatarUrl?: string
+}) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
 
-  const profileUpdates: Partial<ProfileUpdate> = {}
-  if (updates.fullName !== undefined) profileUpdates.full_name = updates.fullName
+  const profileUpdates: any = {}
+  if (updates.fullName) profileUpdates.full_name = updates.fullName
   if (updates.avatarUrl !== undefined) profileUpdates.avatar_url = updates.avatarUrl
 
-  const { data: updatedData, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('profiles')
     .update(profileUpdates)
     .eq('id', user.id)
@@ -86,15 +80,18 @@ export async function updateUserProfile(updates: {
     .single()
 
   if (error) throw error
-  return (updatedData as Profile) ?? null
+  return data
 }
 
 // Change password
 export async function changePassword(newPassword: string) {
-  const { error } = await supabase.auth.updateUser({ password: newPassword })
+  const { error } = await supabase.auth.updateUser({
+    password: newPassword
+  })
 
   if (error) throw error
 }
+
 // Reset password (send email)
 export async function sendPasswordResetEmail(email: string) {
   const { error } = await supabase.auth.resetPasswordForEmail(email, {

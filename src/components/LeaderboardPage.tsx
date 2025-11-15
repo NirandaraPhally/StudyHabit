@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { BookOpen, LogOut, Trophy, Medal, Award, TrendingUp, Flame, Crown, Star, Sparkles } from 'lucide-react';
+import { getCurrentUser } from '../lib/api/auth';
+import { supabase } from '../lib/supabase';
+import { toast } from 'sonner';
 
 type Page = 'landing' | 'login' | 'signup' | 'dashboard' | 'admin' | 'subscription' | 'leaderboard';
 
@@ -13,44 +16,15 @@ interface LeaderboardPageProps {
   onLogout: () => void;
 }
 
-const weeklyLeaders = [
-  { rank: 1, name: 'Emma Davis', hours: 61.7, streak: 25, initials: 'ED', color: 'from-blue-500 to-blue-600' },
-  { rank: 2, name: 'Sarah Miller', hours: 52.3, streak: 18, initials: 'SM', color: 'from-blue-600 to-sky-500' },
-  { rank: 3, name: 'Olivia Brown', hours: 48.9, streak: 14, initials: 'OB', color: 'from-sky-500 to-blue-500' },
-  { rank: 4, name: 'Alex Johnson', hours: 45.5, streak: 12, initials: 'AJ', color: 'from-blue-400 to-sky-400' },
-  { rank: 5, name: 'Mike Chen', hours: 38.2, streak: 8, initials: 'MC', color: 'from-blue-500 to-sky-500' },
-  { rank: 6, name: 'James Wilson', hours: 35.4, streak: 7, initials: 'JW', color: 'from-sky-400 to-blue-600' },
-  { rank: 7, name: 'Sophia Garcia', hours: 32.1, streak: 9, initials: 'SG', color: 'from-blue-600 to-blue-500' },
-  { rank: 8, name: 'Liam Martinez', hours: 29.8, streak: 6, initials: 'LM', color: 'from-sky-500 to-sky-600' },
-  { rank: 9, name: 'Ava Rodriguez', hours: 27.5, streak: 11, initials: 'AR', color: 'from-blue-400 to-blue-500' },
-  { rank: 10, name: 'Noah Anderson', hours: 25.3, streak: 5, initials: 'NA', color: 'from-sky-600 to-blue-600' },
-];
-
-const monthlyLeaders = [
-  { rank: 1, name: 'Sarah Miller', hours: 215.3, streak: 28, initials: 'SM', color: 'from-blue-600 to-sky-500' },
-  { rank: 2, name: 'Emma Davis', hours: 198.7, streak: 25, initials: 'ED', color: 'from-blue-500 to-blue-600' },
-  { rank: 3, name: 'Alex Johnson', hours: 182.5, streak: 24, initials: 'AJ', color: 'from-blue-400 to-sky-400' },
-  { rank: 4, name: 'Olivia Brown', hours: 175.9, streak: 22, initials: 'OB', color: 'from-sky-500 to-blue-500' },
-  { rank: 5, name: 'Mike Chen', hours: 168.2, streak: 20, initials: 'MC', color: 'from-blue-500 to-sky-500' },
-  { rank: 6, name: 'James Wilson', hours: 155.4, streak: 19, initials: 'JW', color: 'from-sky-400 to-blue-600' },
-  { rank: 7, name: 'Sophia Garcia', hours: 145.1, streak: 18, initials: 'SG', color: 'from-blue-600 to-blue-500' },
-  { rank: 8, name: 'Liam Martinez', hours: 138.8, streak: 16, initials: 'LM', color: 'from-sky-500 to-sky-600' },
-  { rank: 9, name: 'Ava Rodriguez', hours: 132.5, streak: 15, initials: 'AR', color: 'from-blue-400 to-blue-500' },
-  { rank: 10, name: 'Noah Anderson', hours: 125.3, streak: 14, initials: 'NA', color: 'from-sky-600 to-blue-600' },
-];
-
-const allTimeLeaders = [
-  { rank: 1, name: 'Sarah Miller', hours: 1250.3, streak: 156, initials: 'SM', color: 'from-blue-600 to-sky-500' },
-  { rank: 2, name: 'Emma Davis', hours: 1189.7, streak: 142, initials: 'ED', color: 'from-blue-500 to-blue-600' },
-  { rank: 3, name: 'Mike Chen', hours: 1098.2, streak: 128, initials: 'MC', color: 'from-blue-500 to-sky-500' },
-  { rank: 4, name: 'Alex Johnson', hours: 1045.5, streak: 118, initials: 'AJ', color: 'from-blue-400 to-sky-400' },
-  { rank: 5, name: 'Olivia Brown', hours: 982.9, streak: 105, initials: 'OB', color: 'from-sky-500 to-blue-500' },
-  { rank: 6, name: 'James Wilson', hours: 925.4, streak: 98, initials: 'JW', color: 'from-sky-400 to-blue-600' },
-  { rank: 7, name: 'Sophia Garcia', hours: 875.1, streak: 89, initials: 'SG', color: 'from-blue-600 to-blue-500' },
-  { rank: 8, name: 'Liam Martinez', hours: 812.8, streak: 82, initials: 'LM', color: 'from-sky-500 to-sky-600' },
-  { rank: 9, name: 'Ava Rodriguez', hours: 765.5, streak: 75, initials: 'AR', color: 'from-blue-400 to-blue-500' },
-  { rank: 10, name: 'Noah Anderson', hours: 698.3, streak: 68, initials: 'NA', color: 'from-sky-600 to-blue-600' },
-];
+interface LeaderEntry {
+  rank: number;
+  name: string;
+  hours: number;
+  streak: number;
+  initials: string;
+  color: string;
+  userId: string;
+}
 
 function getRankIcon(rank: number) {
   if (rank === 1) return <Crown className="w-7 h-7 text-yellow-500 wiggle" />;
@@ -59,10 +33,212 @@ function getRankIcon(rank: number) {
   return null;
 }
 
+const avatarColors = [
+  'from-blue-500 to-blue-600',
+  'from-blue-600 to-sky-500',
+  'from-sky-500 to-blue-500',
+  'from-blue-400 to-sky-400',
+  'from-blue-500 to-sky-500',
+  'from-sky-400 to-blue-600',
+  'from-blue-600 to-blue-500',
+  'from-sky-500 to-sky-600',
+  'from-blue-400 to-blue-500',
+  'from-sky-600 to-blue-600'
+];
+
 export function LeaderboardPage({ onNavigate, onLogout }: LeaderboardPageProps) {
   const [activeTab, setActiveTab] = useState('weekly');
+  const [weeklyLeaders, setWeeklyLeaders] = useState<LeaderEntry[]>([]);
+  const [monthlyLeaders, setMonthlyLeaders] = useState<LeaderEntry[]>([]);
+  const [allTimeLeaders, setAllTimeLeaders] = useState<LeaderEntry[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserName, setCurrentUserName] = useState<string>('Student');
+  const [loading, setLoading] = useState(true);
+  const [platformStats, setPlatformStats] = useState({
+    totalStudents: 0,
+    totalHours: 0,
+    weeklyHours: 0
+  });
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+
+      // Get current user
+      const user = await getCurrentUser();
+      if (!user) {
+        onNavigate('login');
+        return;
+      }
+
+      setCurrentUserId(user.id);
+      setCurrentUserName(user.fullName);
+
+      if (!user.organizationId) {
+        toast.error('No organization found');
+        return;
+      }
+
+      // Get all students in organization
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .eq('organization_id', user.organizationId)
+        .eq('role', 'student');
+
+      if (profilesError) throw profilesError;
+
+      // Calculate date ranges
+      const now = new Date();
+      const weekAgo = new Date(now);
+      weekAgo.setDate(now.getDate() - 7);
+      const monthAgo = new Date(now);
+      monthAgo.setDate(now.getDate() - 30);
+
+      // Get leaderboard data for each timeframe
+      const leaderboardData = await Promise.all(
+        profiles.map(async (profile) => {
+          const { data: allSessions, error } = await supabase
+            .from('study_sessions')
+            .select('duration_hours, session_date')
+            .eq('user_id', profile.id);
+
+          if (error) throw error;
+
+          // Calculate total hours
+          const totalHours = allSessions.reduce((sum, s) => sum + Number(s.duration_hours), 0);
+
+          // Calculate weekly hours
+          const weeklyHours = allSessions
+            .filter(s => new Date(s.session_date) >= weekAgo)
+            .reduce((sum, s) => sum + Number(s.duration_hours), 0);
+
+          // Calculate monthly hours
+          const monthlyHours = allSessions
+            .filter(s => new Date(s.session_date) >= monthAgo)
+            .reduce((sum, s) => sum + Number(s.duration_hours), 0);
+
+          // Calculate streak
+          let streak = 0;
+          for (let i = 0; i < 365; i++) {
+            const checkDate = new Date(now);
+            checkDate.setDate(now.getDate() - i);
+            const dateStr = checkDate.toISOString().split('T')[0];
+            const hasSession = allSessions.some(s => s.session_date.startsWith(dateStr));
+            if (hasSession) {
+              streak++;
+            } else if (i > 0) {
+              break;
+            }
+          }
+
+          const nameParts = profile.full_name.split(' ');
+          const initials = nameParts.length >= 2
+            ? `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`
+            : profile.full_name.substring(0, 2);
+
+          return {
+            userId: profile.id,
+            name: profile.full_name,
+            initials: initials.toUpperCase(),
+            totalHours,
+            weeklyHours,
+            monthlyHours,
+            streak
+          };
+        })
+      );
+
+      // Create weekly leaderboard
+      const weekly = leaderboardData
+        .sort((a, b) => b.weeklyHours - a.weeklyHours)
+        .slice(0, 10)
+        .map((entry, index) => ({
+          rank: index + 1,
+          name: entry.name,
+          hours: entry.weeklyHours,
+          streak: entry.streak,
+          initials: entry.initials,
+          color: avatarColors[index % avatarColors.length],
+          userId: entry.userId
+        }));
+
+      setWeeklyLeaders(weekly);
+
+      // Create monthly leaderboard
+      const monthly = leaderboardData
+        .sort((a, b) => b.monthlyHours - a.monthlyHours)
+        .slice(0, 10)
+        .map((entry, index) => ({
+          rank: index + 1,
+          name: entry.name,
+          hours: entry.monthlyHours,
+          streak: entry.streak,
+          initials: entry.initials,
+          color: avatarColors[index % avatarColors.length],
+          userId: entry.userId
+        }));
+
+      setMonthlyLeaders(monthly);
+
+      // Create all-time leaderboard
+      const allTime = leaderboardData
+        .sort((a, b) => b.totalHours - a.totalHours)
+        .slice(0, 10)
+        .map((entry, index) => ({
+          rank: index + 1,
+          name: entry.name,
+          hours: entry.totalHours,
+          streak: entry.streak,
+          initials: entry.initials,
+          color: avatarColors[index % avatarColors.length],
+          userId: entry.userId
+        }));
+
+      setAllTimeLeaders(allTime);
+
+      // Calculate platform stats
+      const totalStudents = profiles.length;
+      const totalHours = leaderboardData.reduce((sum, entry) => sum + entry.totalHours, 0);
+      const weeklyHours = leaderboardData.reduce((sum, entry) => sum + entry.weeklyHours, 0);
+
+      setPlatformStats({
+        totalStudents,
+        totalHours,
+        weeklyHours
+      });
+
+    } catch (error) {
+      console.error('Error loading leaderboard:', error);
+      toast.error('Failed to load leaderboard', {
+        description: (
+          <span className="text-[#6B21A8]">
+            Please try refreshing the page
+          </span>
+        ),
+        style: { borderColor: '#C4B5FD', color: '#6B21A8' },
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const leaders = activeTab === 'weekly' ? weeklyLeaders : activeTab === 'monthly' ? monthlyLeaders : allTimeLeaders;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600">Loading leaderboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
@@ -95,7 +271,7 @@ export function LeaderboardPage({ onNavigate, onLogout }: LeaderboardPageProps) 
             <div className="flex items-center gap-4">
               <div className="hidden md:block text-right">
                 <div className="text-slate-900 flex items-center gap-2">
-                  Alex Johnson <Star className="w-4 h-4 text-yellow-500" />
+                  {currentUserName} <Star className="w-4 h-4 text-yellow-500" />
                 </div>
                 <div className="text-slate-500">Super Student! 🎓</div>
               </div>
@@ -134,17 +310,17 @@ export function LeaderboardPage({ onNavigate, onLogout }: LeaderboardPageProps) 
           </p>
           <div className="flex items-center justify-center gap-8">
             <div className="text-center">
-              <div className="text-white mb-1">10,000+</div>
+              <div className="text-white mb-1">{platformStats.totalStudents.toLocaleString()}+</div>
               <div className="text-white/80">Active Students</div>
             </div>
             <div className="w-px h-12 bg-white/30" />
             <div className="text-center">
-              <div className="text-white mb-1">50M+</div>
+              <div className="text-white mb-1">{Math.round(platformStats.totalHours).toLocaleString()}+</div>
               <div className="text-white/80">Total Hours</div>
             </div>
             <div className="w-px h-12 bg-white/30" />
             <div className="text-center">
-              <div className="text-white mb-1">1,250+</div>
+              <div className="text-white mb-1">{Math.round(platformStats.weeklyHours).toLocaleString()}+</div>
               <div className="text-white/80">This Week</div>
             </div>
           </div>
@@ -189,156 +365,180 @@ export function LeaderboardPage({ onNavigate, onLogout }: LeaderboardPageProps) 
                 </TabsList>
 
                 <TabsContent value="weekly">
-                  <div className="space-y-3">
-                    {leaders.map((leader) => (
-                      <Card
-                        key={leader.rank}
-                        className={`border-2 border-blue-200 hover:border-blue-400 hover:shadow-xl transition-all rounded-2xl ${
-                          leader.name === 'Alex Johnson' ? 'ring-4 ring-blue-400 bg-blue-50' : 'bg-white'
-                        }`}
-                      >
-                        <CardContent className="p-6">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                              <div className="flex items-center justify-center w-12 h-12">
-                                {getRankIcon(leader.rank) || (
-                                  <Badge className="bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0 rounded-full px-3 py-1">
-                                    #{leader.rank}
-                                  </Badge>
-                                )}
+                  {leaders.length === 0 ? (
+                    <div className="text-center py-12 text-slate-400">
+                      <Trophy className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                      <p className="mb-2">No data yet</p>
+                      <p className="text-sm">Start studying to appear on the leaderboard! 🚀</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {leaders.map((leader) => (
+                        <Card
+                          key={leader.rank}
+                          className={`border-2 border-blue-200 hover:border-blue-400 hover:shadow-xl transition-all rounded-2xl ${
+                            leader.userId === currentUserId ? 'ring-4 ring-blue-400 bg-blue-50' : 'bg-white'
+                          }`}
+                        >
+                          <CardContent className="p-6">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4">
+                                <div className="flex items-center justify-center w-12 h-12">
+                                  {getRankIcon(leader.rank) || (
+                                    <Badge className="bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0 rounded-full px-3 py-1">
+                                      #{leader.rank}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <Avatar className={`w-14 h-14 bg-gradient-to-br ${leader.color} shadow-lg`}>
+                                  <AvatarFallback className="text-white">
+                                    {leader.initials}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <div className="text-slate-900 flex items-center gap-2">
+                                    {leader.name}
+                                    {leader.userId === currentUserId && <span className="text-blue-600">(You!)</span>}
+                                  </div>
+                                  <div className="text-slate-500 flex items-center gap-3 mt-1">
+                                    <span className="flex items-center gap-1">
+                                      <Flame className="w-4 h-4 text-orange-500" />
+                                      {leader.streak} day streak
+                                    </span>
+                                  </div>
+                                </div>
                               </div>
-                              <Avatar className={`w-14 h-14 bg-gradient-to-br ${leader.color} shadow-lg`}>
-                                <AvatarFallback className="text-white">
-                                  {leader.initials}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
+                              <div className="text-right">
                                 <div className="text-slate-900 flex items-center gap-2">
-                                  {leader.name}
-                                  {leader.name === 'Alex Johnson' && <span className="text-blue-600">(You!)</span>}
+                                  <TrendingUp className="w-5 h-5 text-green-600" />
+                                  {leader.hours.toFixed(1)} hrs
                                 </div>
-                                <div className="text-slate-500 flex items-center gap-3 mt-1">
-                                  <span className="flex items-center gap-1">
-                                    <Flame className="w-4 h-4 text-orange-500" />
-                                    {leader.streak} day streak
-                                  </span>
-                                </div>
+                                <div className="text-slate-500">Study Time</div>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <div className="text-slate-900 flex items-center gap-2">
-                                <TrendingUp className="w-5 h-5 text-green-600" />
-                                {leader.hours} hrs
-                              </div>
-                              <div className="text-slate-500">Study Time</div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
                 </TabsContent>
 
                 <TabsContent value="monthly">
-                  <div className="space-y-3">
-                    {leaders.map((leader) => (
-                      <Card
-                        key={leader.rank}
-                        className={`border-2 border-blue-200 hover:border-blue-400 hover:shadow-xl transition-all rounded-2xl ${
-                          leader.name === 'Alex Johnson' ? 'ring-4 ring-blue-400 bg-blue-50' : 'bg-white'
-                        }`}
-                      >
-                        <CardContent className="p-6">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                              <div className="flex items-center justify-center w-12 h-12">
-                                {getRankIcon(leader.rank) || (
-                                  <Badge className="bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0 rounded-full px-3 py-1">
-                                    #{leader.rank}
-                                  </Badge>
-                                )}
+                  {leaders.length === 0 ? (
+                    <div className="text-center py-12 text-slate-400">
+                      <Trophy className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                      <p className="mb-2">No data yet</p>
+                      <p className="text-sm">Start studying to appear on the leaderboard! 🚀</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {leaders.map((leader) => (
+                        <Card
+                          key={leader.rank}
+                          className={`border-2 border-blue-200 hover:border-blue-400 hover:shadow-xl transition-all rounded-2xl ${
+                            leader.userId === currentUserId ? 'ring-4 ring-blue-400 bg-blue-50' : 'bg-white'
+                          }`}
+                        >
+                          <CardContent className="p-6">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4">
+                                <div className="flex items-center justify-center w-12 h-12">
+                                  {getRankIcon(leader.rank) || (
+                                    <Badge className="bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0 rounded-full px-3 py-1">
+                                      #{leader.rank}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <Avatar className={`w-14 h-14 bg-gradient-to-br ${leader.color} shadow-lg`}>
+                                  <AvatarFallback className="text-white">
+                                    {leader.initials}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <div className="text-slate-900 flex items-center gap-2">
+                                    {leader.name}
+                                    {leader.userId === currentUserId && <span className="text-blue-600">(You!)</span>}
+                                  </div>
+                                  <div className="text-slate-500 flex items-center gap-3 mt-1">
+                                    <span className="flex items-center gap-1">
+                                      <Flame className="w-4 h-4 text-orange-500" />
+                                      {leader.streak} day streak
+                                    </span>
+                                  </div>
+                                </div>
                               </div>
-                              <Avatar className={`w-14 h-14 bg-gradient-to-br ${leader.color} shadow-lg`}>
-                                <AvatarFallback className="text-white">
-                                  {leader.initials}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
+                              <div className="text-right">
                                 <div className="text-slate-900 flex items-center gap-2">
-                                  {leader.name}
-                                  {leader.name === 'Alex Johnson' && <span className="text-blue-600">(You!)</span>}
+                                  <TrendingUp className="w-5 h-5 text-green-600" />
+                                  {leader.hours.toFixed(1)} hrs
                                 </div>
-                                <div className="text-slate-500 flex items-center gap-3 mt-1">
-                                  <span className="flex items-center gap-1">
-                                    <Flame className="w-4 h-4 text-orange-500" />
-                                    {leader.streak} day streak
-                                  </span>
-                                </div>
+                                <div className="text-slate-500">Study Time</div>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <div className="text-slate-900 flex items-center gap-2">
-                                <TrendingUp className="w-5 h-5 text-green-600" />
-                                {leader.hours} hrs
-                              </div>
-                              <div className="text-slate-500">Study Time</div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
                 </TabsContent>
 
                 <TabsContent value="alltime">
-                  <div className="space-y-3">
-                    {leaders.map((leader) => (
-                      <Card
-                        key={leader.rank}
-                        className={`border-2 border-blue-200 hover:border-blue-400 hover:shadow-xl transition-all rounded-2xl ${
-                          leader.name === 'Alex Johnson' ? 'ring-4 ring-blue-400 bg-blue-50' : 'bg-white'
-                        }`}
-                      >
-                        <CardContent className="p-6">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                              <div className="flex items-center justify-center w-12 h-12">
-                                {getRankIcon(leader.rank) || (
-                                  <Badge className="bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0 rounded-full px-3 py-1">
-                                    #{leader.rank}
-                                  </Badge>
-                                )}
+                  {leaders.length === 0 ? (
+                    <div className="text-center py-12 text-slate-400">
+                      <Trophy className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                      <p className="mb-2">No data yet</p>
+                      <p className="text-sm">Start studying to appear on the leaderboard! 🚀</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {leaders.map((leader) => (
+                        <Card
+                          key={leader.rank}
+                          className={`border-2 border-blue-200 hover:border-blue-400 hover:shadow-xl transition-all rounded-2xl ${
+                            leader.userId === currentUserId ? 'ring-4 ring-blue-400 bg-blue-50' : 'bg-white'
+                          }`}
+                        >
+                          <CardContent className="p-6">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4">
+                                <div className="flex items-center justify-center w-12 h-12">
+                                  {getRankIcon(leader.rank) || (
+                                    <Badge className="bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0 rounded-full px-3 py-1">
+                                      #{leader.rank}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <Avatar className={`w-14 h-14 bg-gradient-to-br ${leader.color} shadow-lg`}>
+                                  <AvatarFallback className="text-white">
+                                    {leader.initials}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <div className="text-slate-900 flex items-center gap-2">
+                                    {leader.name}
+                                    {leader.userId === currentUserId && <span className="text-blue-600">(You!)</span>}
+                                  </div>
+                                  <div className="text-slate-500 flex items-center gap-3 mt-1">
+                                    <span className="flex items-center gap-1">
+                                      <Flame className="w-4 h-4 text-orange-500" />
+                                      {leader.streak} day streak
+                                    </span>
+                                  </div>
+                                </div>
                               </div>
-                              <Avatar className={`w-14 h-14 bg-gradient-to-br ${leader.color} shadow-lg`}>
-                                <AvatarFallback className="text-white">
-                                  {leader.initials}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
+                              <div className="text-right">
                                 <div className="text-slate-900 flex items-center gap-2">
-                                  {leader.name}
-                                  {leader.name === 'Alex Johnson' && <span className="text-blue-600">(You!)</span>}
+                                  <TrendingUp className="w-5 h-5 text-green-600" />
+                                  {leader.hours.toFixed(1)} hrs
                                 </div>
-                                <div className="text-slate-500 flex items-center gap-3 mt-1">
-                                  <span className="flex items-center gap-1">
-                                    <Flame className="w-4 h-4 text-orange-500" />
-                                    {leader.streak} day streak
-                                  </span>
-                                </div>
+                                <div className="text-slate-500">Study Time</div>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <div className="text-slate-900 flex items-center gap-2">
-                                <TrendingUp className="w-5 h-5 text-green-600" />
-                                {leader.hours} hrs
-                              </div>
-                              <div className="text-slate-500">Study Time</div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
                 </TabsContent>
               </Tabs>
             </CardContent>
